@@ -1,10 +1,13 @@
 ﻿import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
+
+import 'supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +17,9 @@ Future<void> main() async {
           defaultTargetPlatform == TargetPlatform.iOS)) {
     await NotificationService.initialize();
   }
+
+  await SupabaseService.initialize();
+  await SupabaseService.ensureAuthenticated();
 
   runApp(const GeminiPomodoroApp());
 }
@@ -27,8 +33,9 @@ class AppStrings {
     'tr': {
       'appTitle': 'Sumera Pomodoro',
       'focusMode': 'Odak Modu',
-      'shortBreakMode': 'Kısa Mola',
-      'longBreakMode': 'Uzun Mola',
+      'shortBreakMode': 'Mola',
+      'longBreakMode': 'Mola',
+      'breakMode': 'Mola',
       'focusDescription': 'Konsantrasyonu koru',
       'shortBreakDescription': 'Kısa nefes al',
       'longBreakDescription': 'Daha uzun dinlen',
@@ -42,6 +49,10 @@ class AppStrings {
       'notificationsSubtitle': 'Süre bittiğinde uyarı göster',
       'autoAdvance': 'Otomatik geçiş',
       'autoAdvanceSubtitle': 'Çalışma bitince sonraki mod otomatik açılsın',
+      'workDuration': 'Çalışma süresi',
+      'breakDuration': 'Mola süresi',
+      'dailyFocus': 'Günlük çalışma',
+      'weeklyFocus': 'Son 7 gün',
       'minutes': 'dk',
       'taskList': 'Görev listesi',
       'newTaskHint': 'Yeni görev ekle',
@@ -58,10 +69,11 @@ class AppStrings {
       'addTask': 'Görev ekle',
     },
     'en': {
-      'appTitle': 'Gemini Pomodoro',
+      'appTitle': 'Sumera Pomodoro',
       'focusMode': 'Focus Mode',
-      'shortBreakMode': 'Short Break',
-      'longBreakMode': 'Long Break',
+      'shortBreakMode': 'Break',
+      'longBreakMode': 'Break',
+      'breakMode': 'Break',
       'focusDescription': 'Stay focused',
       'shortBreakDescription': 'Take a quick breath',
       'longBreakDescription': 'Rest a bit longer',
@@ -75,6 +87,10 @@ class AppStrings {
       'notificationsSubtitle': 'Show alert when time is up',
       'autoAdvance': 'Auto advance',
       'autoAdvanceSubtitle': 'Move to the next mode automatically',
+      'workDuration': 'Work duration',
+      'breakDuration': 'Break duration',
+      'dailyFocus': 'Daily focus',
+      'weeklyFocus': 'Last 7 days',
       'minutes': 'min',
       'taskList': 'Task list',
       'newTaskHint': 'Add a new task',
@@ -101,32 +117,28 @@ class AppStrings {
 class AppSettings {
   AppSettings({
     this.workMinutes = 25,
-    this.shortBreakMinutes = 5,
-    this.longBreakMinutes = 15,
+    this.breakMinutes = 10,
     this.enableNotifications = true,
     this.enableAutoAdvance = true,
     this.languageCode = 'tr',
   });
 
   final int workMinutes;
-  final int shortBreakMinutes;
-  final int longBreakMinutes;
+  final int breakMinutes;
   final bool enableNotifications;
   final bool enableAutoAdvance;
   final String languageCode;
 
   AppSettings copyWith({
     int? workMinutes,
-    int? shortBreakMinutes,
-    int? longBreakMinutes,
+    int? breakMinutes,
     bool? enableNotifications,
     bool? enableAutoAdvance,
     String? languageCode,
   }) {
     return AppSettings(
       workMinutes: workMinutes ?? this.workMinutes,
-      shortBreakMinutes: shortBreakMinutes ?? this.shortBreakMinutes,
-      longBreakMinutes: longBreakMinutes ?? this.longBreakMinutes,
+      breakMinutes: breakMinutes ?? this.breakMinutes,
       enableNotifications: enableNotifications ?? this.enableNotifications,
       enableAutoAdvance: enableAutoAdvance ?? this.enableAutoAdvance,
       languageCode: languageCode ?? this.languageCode,
@@ -135,10 +147,15 @@ class AppSettings {
 
   static Future<AppSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
+
+    final legacyShort = prefs.getInt('short_break_minutes');
+    final legacyLong = prefs.getInt('long_break_minutes');
+    final legacyBreak = prefs.getInt('break_minutes');
+    final resolvedBreak = legacyBreak ?? legacyShort ?? legacyLong ?? 10;
+
     return AppSettings(
       workMinutes: prefs.getInt('work_minutes') ?? 25,
-      shortBreakMinutes: prefs.getInt('short_break_minutes') ?? 5,
-      longBreakMinutes: prefs.getInt('long_break_minutes') ?? 15,
+      breakMinutes: resolvedBreak,
       enableNotifications: prefs.getBool('notifications_enabled') ?? true,
       enableAutoAdvance: prefs.getBool('auto_advance') ?? true,
       languageCode: prefs.getString('language_code') ?? 'tr',
@@ -148,8 +165,7 @@ class AppSettings {
   Future<void> save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('work_minutes', workMinutes);
-    await prefs.setInt('short_break_minutes', shortBreakMinutes);
-    await prefs.setInt('long_break_minutes', longBreakMinutes);
+    await prefs.setInt('break_minutes', breakMinutes);
     await prefs.setBool('notifications_enabled', enableNotifications);
     await prefs.setBool('auto_advance', enableAutoAdvance);
     await prefs.setString('language_code', languageCode);
@@ -168,6 +184,25 @@ class SessionRecord {
 
   final FocusMode mode;
   final DateTime completedAt;
+}
+
+class DailyFocusRecord {
+  DailyFocusRecord({required this.date, required this.minutes});
+
+  final DateTime date;
+  final int minutes;
+
+  Map<String, dynamic> toJson() => {
+        'date': date.toIso8601String(),
+        'minutes': minutes,
+      };
+
+  factory DailyFocusRecord.fromJson(Map<String, dynamic> json) {
+    return DailyFocusRecord(
+      date: DateTime.parse(json['date'] as String),
+      minutes: (json['minutes'] as num).toInt(),
+    );
+  }
 }
 
 class NotificationService {
@@ -276,7 +311,7 @@ class _GeminiPomodoroAppState extends State<GeminiPomodoroApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gemini Pomodoro',
+      title: 'Sumera Pomodoro',
       debugShowCheckedModeBanner: false,
       locale: _locale,
       supportedLocales: AppStrings.supportedLocales,
@@ -325,24 +360,24 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
   AppSettings _settings = AppSettings();
   FocusMode _selectedMode = FocusMode.work;
   int _secondsRemaining = 25 * 60;
+  final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(25 * 60);
   Timer? _timer;
   bool _isRunning = false;
   int _completedPomodoros = 0;
   final TextEditingController _taskController = TextEditingController();
   List<TaskItem> _tasks = [];
   final List<SessionRecord> _sessionHistory = [];
+  List<DailyFocusRecord> _dailyFocus = [];
 
-  List<TaskItem> _defaultTasks() {
-    final isTurkish = Localizations.localeOf(context).languageCode == 'tr';
-    return isTurkish
-        ? [
-            TaskItem(title: 'Yazılım planını hazırla'),
-            TaskItem(title: 'Öncelikli görevi bitir'),
-          ]
-        : [
-            TaskItem(title: 'Plan the software'),
-            TaskItem(title: 'Finish the priority task'),
-          ];
+  static String _formatDuration(int totalSeconds) {
+    final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  void _syncTimerValue(int value) {
+    _secondsRemaining = value;
+    _timeNotifier.value = value;
   }
 
   int get _currentDuration {
@@ -350,9 +385,8 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
       case FocusMode.work:
         return _settings.workMinutes * 60;
       case FocusMode.shortBreak:
-        return _settings.shortBreakMinutes * 60;
       case FocusMode.longBreak:
-        return _settings.longBreakMinutes * 60;
+        return _settings.breakMinutes * 60;
     }
   }
 
@@ -362,20 +396,15 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
     return total > 0 ? (elapsed / total).clamp(0.0, 1.0) : 0.0;
   }
 
-  String get _formattedTime {
-    final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
-    final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
+  String get _formattedTime => _formatDuration(_secondsRemaining);
 
   String get _modeTitle {
     switch (_selectedMode) {
       case FocusMode.work:
         return AppStrings.of(context, 'focusMode');
       case FocusMode.shortBreak:
-        return AppStrings.of(context, 'shortBreakMode');
       case FocusMode.longBreak:
-        return AppStrings.of(context, 'longBreakMode');
+        return AppStrings.of(context, 'breakMode');
     }
   }
 
@@ -384,9 +413,8 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
       case FocusMode.work:
         return AppStrings.of(context, 'focusDescription');
       case FocusMode.shortBreak:
-        return AppStrings.of(context, 'shortBreakDescription');
       case FocusMode.longBreak:
-        return AppStrings.of(context, 'longBreakDescription');
+        return AppStrings.of(context, 'shortBreakDescription');
     }
   }
 
@@ -394,6 +422,7 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadDailyFocus();
   }
 
   Future<void> _loadSettings() async {
@@ -402,9 +431,53 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
 
     setState(() {
       _settings = loaded;
-      _secondsRemaining = _settings.workMinutes * 60;
-      _tasks = _defaultTasks();
+      _syncTimerValue(_settings.workMinutes * 60);
+      _tasks = [];
     });
+  }
+
+  Future<void> _loadDailyFocus() async {
+    try {
+      await SupabaseService.ensureAuthenticated();
+      final cloudRecords = await SupabaseService.getFocusSessions();
+      if (!mounted) return;
+
+      final records = cloudRecords
+          .map((item) => DailyFocusRecord(
+                date: DateTime.parse(item['date'] as String),
+                minutes: (item['minutes'] as num).toInt(),
+              ))
+          .toList();
+
+      setState(() => _dailyFocus = records);
+      return;
+    } catch (_) {
+      // Fallback to local storage when Supabase is unavailable.
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('daily_focus_records');
+    if (!mounted) return;
+
+    if (raw == null || raw.isEmpty) {
+      setState(() => _dailyFocus = []);
+      return;
+    }
+
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    final records = decoded
+        .map((item) => DailyFocusRecord.fromJson(item as Map<String, dynamic>))
+        .toList();
+
+    setState(() => _dailyFocus = records);
+  }
+
+  Future<void> _saveDailyFocus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = jsonEncode(
+      _dailyFocus.map((record) => record.toJson()).toList(),
+    );
+    await prefs.setString('daily_focus_records', data);
   }
 
   Future<void> _saveSettings() async {
@@ -417,7 +490,9 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
-        setState(() => _secondsRemaining--);
+        setState(() {
+          _syncTimerValue(_secondsRemaining - 1);
+        });
       } else {
         _timer?.cancel();
         _timer = null;
@@ -434,14 +509,14 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
 
   void _resetTimer() {
     _pauseTimer();
-    setState(() => _secondsRemaining = _currentDuration);
+    setState(() => _syncTimerValue(_currentDuration));
   }
 
   void _selectMode(FocusMode mode) {
     _pauseTimer();
     setState(() {
       _selectedMode = mode;
-      _secondsRemaining = _currentDuration;
+      _syncTimerValue(_currentDuration);
     });
   }
 
@@ -459,10 +534,14 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
           }()
         : _selectedMode;
 
+    if (finishedMode == FocusMode.work) {
+      _addFocusMinutesToToday(_settings.workMinutes);
+    }
+
     setState(() {
       _isRunning = false;
       _selectedMode = nextMode;
-      _secondsRemaining = _currentDuration;
+      _syncTimerValue(_currentDuration);
       _sessionHistory.add(
         SessionRecord(mode: finishedMode, completedAt: DateTime.now()),
       );
@@ -491,60 +570,189 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
     );
   }
 
-  void _addTask() {
+  Future<void> _addTask() async {
     final text = _taskController.text.trim();
     if (text.isEmpty) return;
 
+    final task = TaskItem(title: text);
     setState(() {
-      _tasks.add(TaskItem(title: text));
+      _tasks.add(task);
       _taskController.clear();
     });
+
+    try {
+      await SupabaseService.saveTask(text, isDone: false);
+    } catch (_) {
+      // Local-only fallback continues silently.
+    }
   }
 
-  void _toggleTask(int index) {
+  Future<void> _toggleTask(int index) async {
+    final task = _tasks[index];
+    final nextValue = !task.isDone;
     setState(() {
-      _tasks[index].isDone = !_tasks[index].isDone;
+      task.isDone = nextValue;
     });
+
+    try {
+      final cloudTask = await SupabaseService.getTasks();
+      final match = cloudTask.firstWhere(
+        (item) => item['title'] == task.title,
+        orElse: () => <String, dynamic>{},
+      );
+      if (match.isNotEmpty && match['id'] != null) {
+        await SupabaseService.updateTask(match['id'] as String, isDone: nextValue);
+      }
+    } catch (_) {
+      // Local-only fallback continues silently.
+    }
   }
 
   void _setWorkMinutes(int value) {
-    if (value < 15 || value > 60) return;
+    final safeValue = value.clamp(1, 180);
     setState(() {
-      _settings = _settings.copyWith(workMinutes: value);
+      _settings = _settings.copyWith(workMinutes: safeValue);
       if (_selectedMode == FocusMode.work) {
-        _secondsRemaining = value * 60;
+        _syncTimerValue(safeValue * 60);
       }
     });
     _saveSettings();
   }
 
   void _setBreakMinutes(int value) {
-    if (value < 3 || value > 30) return;
+    final safeValue = value.clamp(1, 60);
     setState(() {
-      _settings = _settings.copyWith(shortBreakMinutes: value);
-      if (_selectedMode == FocusMode.shortBreak) {
-        _secondsRemaining = value * 60;
+      _settings = _settings.copyWith(breakMinutes: safeValue);
+      if (_selectedMode == FocusMode.shortBreak || _selectedMode == FocusMode.longBreak) {
+        _syncTimerValue(safeValue * 60);
       }
     });
     _saveSettings();
   }
 
-  void _setLongBreakMinutes(int value) {
-    if (value < 10 || value > 45) return;
-    setState(() {
-      _settings = _settings.copyWith(longBreakMinutes: value);
-      if (_selectedMode == FocusMode.longBreak) {
-        _secondsRemaining = value * 60;
-      }
-    });
-    _saveSettings();
+  Future<void> _addFocusMinutesToToday(int minutes) async {
+    final today = DateTime.now();
+    final normalizedDate = DateTime(today.year, today.month, today.day);
+
+    final existingIndex = _dailyFocus.indexWhere(
+      (record) => record.date.year == normalizedDate.year &&
+          record.date.month == normalizedDate.month &&
+          record.date.day == normalizedDate.day,
+    );
+
+    if (existingIndex >= 0) {
+      final existing = _dailyFocus[existingIndex];
+      _dailyFocus[existingIndex] = DailyFocusRecord(
+        date: existing.date,
+        minutes: existing.minutes + minutes,
+      );
+    } else {
+      _dailyFocus.add(DailyFocusRecord(date: normalizedDate, minutes: minutes));
+    }
+
+    _dailyFocus.sort((a, b) => a.date.compareTo(b.date));
+    _saveDailyFocus();
+
+    try {
+      final dateKey = normalizedDate.toIso8601String().split('T').first;
+      final current = _dailyFocus.firstWhere(
+        (record) => record.date.year == normalizedDate.year &&
+            record.date.month == normalizedDate.month &&
+            record.date.day == normalizedDate.day,
+        orElse: () => DailyFocusRecord(date: normalizedDate, minutes: minutes),
+      );
+      await SupabaseService.saveFocusSession(
+        date: dateKey,
+        minutes: current.minutes,
+      );
+    } catch (_) {
+      // Local fallback is already persisted above.
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _timeNotifier.dispose();
     _taskController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showModeOverlay() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: const Color(0xFF10111A).withAlpha(200),
+      builder: (dialogContext) {
+        return Dialog.fullscreen(
+          backgroundColor: const Color(0xFF10111A),
+          child: ValueListenableBuilder<int>(
+            valueListenable: _timeNotifier,
+            builder: (context, remaining, _) {
+              return Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF10111A), Color(0xFF111827)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                            color: Colors.white,
+                            iconSize: 28,
+                            splashRadius: 22,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 22,
+                          ),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF6C63FF), Color(0xFF4CC9F0)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.all(Radius.circular(30)),
+                          ),
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _formatDuration(remaining),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 150,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -579,113 +787,135 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6C63FF), Color(0xFF4CC9F0)],
+              GestureDetector(
+                key: const ValueKey('mode-description'),
+                behavior: HitTestBehavior.opaque,
+                onTap: _showModeOverlay,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6C63FF), Color(0xFF4CC9F0)],
+                    ),
+                    borderRadius: BorderRadius.circular(28),
                   ),
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      _modeDescription,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        letterSpacing: 0.5,
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton(
+                          onPressed: _showModeOverlay,
+                          icon: const Icon(Icons.fullscreen_rounded),
+                          splashRadius: 20,
+                          color: Colors.white70,
+                          tooltip: 'Tam ekran',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: FocusMode.values.map((mode) {
-                        final isSelected = mode == _selectedMode;
-                        final label = switch (mode) {
-                          FocusMode.work => AppStrings.of(context, 'workMode'),
-                          FocusMode.shortBreak => AppStrings.of(context, 'shortBreakMode'),
-                          FocusMode.longBreak => AppStrings.of(context, 'longBreakMode'),
-                        };
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          _modeDescription,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [FocusMode.work, FocusMode.shortBreak].map((mode) {
+                          final isSelected = mode == _selectedMode ||
+                              (mode == FocusMode.shortBreak &&
+                                  (_selectedMode == FocusMode.shortBreak ||
+                                   _selectedMode == FocusMode.longBreak));
+                          final label = switch (mode) {
+                            FocusMode.work => AppStrings.of(context, 'workMode'),
+                            FocusMode.shortBreak => AppStrings.of(context, 'breakMode'),
+                            FocusMode.longBreak => AppStrings.of(context, 'breakMode'),
+                          };
 
-                        return ChoiceChip(
-                          selected: isSelected,
-                          label: Text(label),
-                          onSelected: (_) => _selectMode(mode),
-                          selectedColor: Colors.white.withAlpha(60),
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white70,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          backgroundColor: Colors.transparent,
-                          side: const BorderSide(color: Colors.white24),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 240,
-                          height: 240,
-                          child: CircularProgressIndicator(
-                            value: _progress,
-                            strokeWidth: 14,
-                            backgroundColor: Colors.white24,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                          return ChoiceChip(
+                            selected: isSelected,
+                            label: Text(label),
+                            onSelected: (_) => _selectMode(mode),
+                            selectedColor: Colors.white.withAlpha(60),
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : Colors.white70,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ),
-                        Column(
-                          children: [
-                            Text(
-                              _modeTitle,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
+                            backgroundColor: Colors.transparent,
+                            side: const BorderSide(color: Colors.white24),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 240,
+                            height: 240,
+                            child: CircularProgressIndicator(
+                              value: _progress,
+                              strokeWidth: 14,
+                              backgroundColor: Colors.white24,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _formattedTime,
-                              style: const TextStyle(
-                                fontSize: 52,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                _modeTitle,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: _isRunning ? null : _startTimer,
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: Text(AppStrings.of(context, 'start')),
-                        ),
-                        const SizedBox(width: 12),
-                        OutlinedButton.icon(
-                          onPressed: _pauseTimer,
-                          icon: const Icon(Icons.pause_rounded),
-                          label: Text(AppStrings.of(context, 'pause')),
-                        ),
-                        const SizedBox(width: 12),
-                        TextButton.icon(
-                          onPressed: _resetTimer,
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: Text(AppStrings.of(context, 'reset')),
-                        ),
-                      ],
-                    ),
-                  ],
+                              const SizedBox(height: 10),
+                              Text(
+                                _formattedTime,
+                                style: const TextStyle(
+                                  fontSize: 52,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: _isRunning ? null : _startTimer,
+                            icon: const Icon(Icons.play_arrow_rounded),
+                            label: Text(AppStrings.of(context, 'start')),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton.icon(
+                            onPressed: _pauseTimer,
+                            icon: const Icon(Icons.pause_rounded),
+                            label: Text(AppStrings.of(context, 'pause')),
+                          ),
+                          const SizedBox(width: 12),
+                          TextButton.icon(
+                            onPressed: _resetTimer,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: Text(AppStrings.of(context, 'reset')),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -745,29 +975,62 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _DurationChip(
-                            label: '${AppStrings.of(context, 'workMode')} ${_settings.workMinutes} ${AppStrings.of(context, 'minutes')}',
-                            selected: _selectedMode == FocusMode.work,
-                            onTap: () => _setWorkMinutes(25),
-                          ),
-                          _DurationChip(
-                            label: '${AppStrings.of(context, 'shortBreakMode')} ${_settings.shortBreakMinutes} ${AppStrings.of(context, 'minutes')}',
-                            selected: _selectedMode == FocusMode.shortBreak,
-                            onTap: () => _setBreakMinutes(5),
-                          ),
-                          _DurationChip(
-                            label: '${AppStrings.of(context, 'longBreakMode')} ${_settings.longBreakMinutes} ${AppStrings.of(context, 'minutes')}',
-                            selected: _selectedMode == FocusMode.longBreak,
-                            onTap: () => _setLongBreakMinutes(15),
-                          ),
-                        ],
+                      _SettingsCard(
+                        child: Column(
+                          children: [
+                            _DurationSettingRow(
+                              label: AppStrings.of(context, 'workDuration'),
+                              value: _settings.workMinutes,
+                              min: 1,
+                              max: 180,
+                              onChanged: _setWorkMinutes,
+                              active: _selectedMode == FocusMode.work,
+                            ),
+                            const SizedBox(height: 8),
+                            Divider(color: Colors.white12),
+                            const SizedBox(height: 8),
+                            _DurationSettingRow(
+                              label: AppStrings.of(context, 'breakDuration'),
+                              value: _settings.breakMinutes,
+                              min: 1,
+                              max: 60,
+                              onChanged: _setBreakMinutes,
+                              active: _selectedMode == FocusMode.shortBreak ||
+                                  _selectedMode == FocusMode.longBreak,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _SettingsCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          AppStrings.of(context, 'dailyFocus'),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          AppStrings.of(context, 'weeklyFocus'),
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _DailyFocusChart(records: _dailyFocus),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -889,24 +1152,161 @@ class _PomodoroHomePageState extends State<PomodoroHomePage> {
   }
 }
 
-class _DurationChip extends StatelessWidget {
-  const _DurationChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.child});
 
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      selectedColor: const Color(0xFF6C63FF),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF171A27),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(40),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _DurationSettingRow extends StatelessWidget {
+  const _DurationSettingRow({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    required this.active,
+  });
+
+  final String label;
+  final int value;
+  final int min;
+  final int max;
+  final ValueChanged<int> onChanged;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF6C63FF).withAlpha(35) : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: active ? const Color(0xFF6C63FF) : Colors.white12,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '$value ${AppStrings.of(context, 'minutes')}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          Slider.adaptive(
+            min: min.toDouble(),
+            max: max.toDouble(),
+            value: value.toDouble(),
+            divisions: (max - min).clamp(1, 59),
+            onChanged: (newValue) => onChanged(newValue.round()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DailyFocusChart extends StatelessWidget {
+  const _DailyFocusChart({required this.records});
+
+  final List<DailyFocusRecord> records;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final lastSevenDays = List.generate(7, (index) {
+      final date = DateTime(now.year, now.month, now.day - (6 - index));
+      final existing = records.firstWhere(
+        (record) =>
+            record.date.year == date.year &&
+            record.date.month == date.month &&
+            record.date.day == date.day,
+        orElse: () => DailyFocusRecord(date: date, minutes: 0),
+      );
+      return existing;
+    });
+
+    final maxMinutes = lastSevenDays.fold<int>(
+      1,
+      (previousValue, element) => element.minutes > previousValue ? element.minutes : previousValue,
+    );
+
+    return SizedBox(
+      height: 150,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: lastSevenDays.map((record) {
+          final height = maxMinutes <= 0 ? 0.0 : (record.minutes / maxMinutes) * 100;
+          final label = '${record.date.day}/${record.date.month}';
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '${record.minutes}',
+                    style: const TextStyle(fontSize: 10, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: height.clamp(8.0, 110.0),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4CC9F0), Color(0xFF6C63FF)],
+                      ),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(fontSize: 10, color: Colors.white60),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
