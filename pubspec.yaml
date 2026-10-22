@@ -1,5 +1,5 @@
 name: pomodoro_app
-description: "A new Flutter project."
+description: "Sumera Pomodoro - Flutter ile yazılmış odak zamanlayıcısı."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -37,6 +37,7 @@ dependencies:
   flutter_local_notifications: ^19.0.0
   timezone: ^0.10.1
   shared_preferences: ^2.5.3
+  wakelock_plus: ^1.4.0
 
 dev_dependencies:
   flutter_test:
@@ -59,6 +60,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/branding/emblem.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
