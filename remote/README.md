@@ -79,6 +79,22 @@ dosyasındadır. Örnek:
 }
 ```
 
+### Bulut yedekleme (`cloud`)
+
+Boş bırakıldığında bulut yedekleme kapalıdır ve Ayarlar'da görünmez. Supabase projenizin bilgilerini
+yazdığınızda yayındaki uygulamalarda yedekleme kendiliğinden açılır (uygulama bir sonraki açılışta bağlanır):
+
+```json
+"cloud": {
+  "url": "https://PROJE-KODU.supabase.co",
+  "publishableKey": "sb_publishable_... veya eyJ... ile başlayan anon anahtar"
+}
+```
+
+Bu anahtar herkese açık olacak şekilde tasarlanmıştır; güvenliği `supabase/schema.sql` içindeki
+satır düzeyi güvenlik (RLS) kuralları sağlar. **`service_role` / secret anahtarını asla buraya yazmayın.**
+Kurulum adımları ana `README.md` dosyasında.
+
 ### Bağlantılar (`links`)
 
 - `store` – "Güncelle" ve "Uygulamayı değerlendir" düğmelerinin açtığı adres

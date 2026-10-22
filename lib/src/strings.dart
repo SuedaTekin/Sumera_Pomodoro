@@ -95,12 +95,15 @@ class AppStrings {
       'version': 'Sürüm',
       'privacyPolicy': 'Gizlilik politikası',
       'privacyText':
-          'Sumera Pomodoro hiçbir kişisel veri toplamaz, paylaşmaz veya '
-          'internete göndermez. Görevlerin, ayarların ve istatistiklerin '
-          'yalnızca bu cihazda saklanır ve uygulamayı kaldırdığında silinir. '
-          'Uygulama yalnızca duyuru ve ayar dosyasını indirmek için internete '
-          'bağlanır; bu sırada senden hiçbir bilgi gönderilmez. Bildirim izni '
-          'yalnızca süre bittiğinde seni uyarmak için kullanılır.',
+          'Sumera Pomodoro adını, e-postanı veya konumunu istemez; hesap '
+          'gerektirmez ve reklam içermez. Görevlerin, ayarların ve '
+          'istatistiklerin bu cihazda saklanır. Bulut yedekleme açıkken '
+          'görevlerin ve odak oturumların anonim bir kimlikle Supabase '
+          'sunucularında da saklanır; bu veriler yalnızca sana aittir, reklam '
+          'veya analiz için kullanılmaz ve Ayarlar > Buluttaki verilerimi sil '
+          'ile kalıcı olarak silinebilir. Uygulama ayrıca duyuru ve ayar '
+          'dosyasını indirmek için internete bağlanır. Bildirim izni yalnızca '
+          'süre bittiğinde seni uyarmak için kullanılır.',
       'licenses': 'Açık kaynak lisansları',
       'close': 'Kapat',
       'endsAt': 'Bitiş:',
@@ -129,6 +132,22 @@ class AppStrings {
       'dismiss': 'Kapat',
       'quoteOfDay': 'Günün sözü',
       'learnMore': 'Daha fazla',
+      'cloud': 'Bulut yedekleme',
+      'cloudSync': 'Buluta yedekle',
+      'cloudSyncSubtitle':
+          'Görevler ve odak oturumları anonim olarak yedeklenir',
+      'syncNow': 'Şimdi eşitle',
+      'syncing': 'Eşitleniyor…',
+      'syncedAt': 'Son eşitleme',
+      'syncFailed': 'Eşitlenemedi, daha sonra yeniden denenecek',
+      'syncNever': 'Henüz eşitlenmedi',
+      'deleteCloud': 'Buluttaki verilerimi sil',
+      'deleteCloudConfirm':
+          'Buluttaki görev ve oturum kopyan kalıcı olarak silinecek ve '
+          'yedekleme kapanacak. Bu cihazdaki verilerin silinmez.',
+      'cloudDeleted': 'Buluttaki verilerin silindi',
+      'cloudDeleteFailed':
+          'Silinemedi. İnternet bağlantını kontrol edip tekrar dene.',
       'rateApp': 'Uygulamayı değerlendir',
       'sendFeedback': 'Geri bildirim gönder',
       'minutesShort': 'dk',
@@ -224,13 +243,15 @@ class AppStrings {
       'version': 'Version',
       'privacyPolicy': 'Privacy policy',
       'privacyText':
-          'Sumera Pomodoro does not collect, share or upload any personal data. '
-          'Your tasks, settings and statistics are stored only on this '
-          'device and are removed when you uninstall the app. The app '
-          'connects to the internet only to download its announcement and '
-          'settings file; no information about you is sent. The '
-          'notification permission is used only to alert you when a '
-          'session ends.',
+          'Sumera Pomodoro never asks for your name, e-mail or location; it '
+          'needs no account and shows no ads. Your tasks, settings and '
+          'statistics are stored on this device. While cloud backup is on, '
+          'your tasks and focus sessions are also stored on Supabase servers '
+          'under an anonymous id; they belong only to you, are never used for '
+          'ads or analytics, and can be permanently removed with Settings > '
+          'Delete my cloud data. The app also downloads its announcement and '
+          'settings file. The notification permission is used only to alert '
+          'you when a session ends.',
       'licenses': 'Open source licenses',
       'close': 'Close',
       'endsAt': 'Ends at',
@@ -261,6 +282,21 @@ class AppStrings {
       'dismiss': 'Dismiss',
       'quoteOfDay': 'Quote of the day',
       'learnMore': 'Learn more',
+      'cloud': 'Cloud backup',
+      'cloudSync': 'Back up to cloud',
+      'cloudSyncSubtitle': 'Tasks and focus sessions are backed up anonymously',
+      'syncNow': 'Sync now',
+      'syncing': 'Syncing…',
+      'syncedAt': 'Last synced',
+      'syncFailed': 'Could not sync, will retry later',
+      'syncNever': 'Not synced yet',
+      'deleteCloud': 'Delete my cloud data',
+      'deleteCloudConfirm':
+          'Your cloud copy of tasks and sessions will be permanently deleted '
+          'and backup will be turned off. Data on this device is kept.',
+      'cloudDeleted': 'Your cloud data was deleted',
+      'cloudDeleteFailed':
+          'Could not delete. Check your connection and try again.',
       'rateApp': 'Rate the app',
       'sendFeedback': 'Send feedback',
       'minutesShort': 'min',

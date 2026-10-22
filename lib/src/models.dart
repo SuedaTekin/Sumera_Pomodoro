@@ -17,6 +17,7 @@ class AppSettings {
     this.keepScreenOn = true,
     this.enableHaptics = true,
     this.showOngoing = true,
+    this.cloudSync = true,
     this.languageCode = systemLanguage,
   });
 
@@ -43,6 +44,9 @@ class AppSettings {
   /// Live countdown in the notification shade while the timer runs.
   final bool showOngoing;
 
+  /// Back up tasks and sessions to Supabase.
+  final bool cloudSync;
+
   /// 'tr', 'en' or [systemLanguage].
   final String languageCode;
 
@@ -64,6 +68,7 @@ class AppSettings {
     bool? keepScreenOn,
     bool? enableHaptics,
     bool? showOngoing,
+    bool? cloudSync,
     String? languageCode,
   }) {
     return AppSettings(
@@ -78,6 +83,7 @@ class AppSettings {
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
       enableHaptics: enableHaptics ?? this.enableHaptics,
       showOngoing: showOngoing ?? this.showOngoing,
+      cloudSync: cloudSync ?? this.cloudSync,
       languageCode: languageCode ?? this.languageCode,
     );
   }
@@ -122,6 +128,7 @@ class AppSettings {
       keepScreenOn: prefs.getBool('keep_screen_on') ?? true,
       enableHaptics: prefs.getBool('haptics') ?? true,
       showOngoing: prefs.getBool('show_ongoing') ?? true,
+      cloudSync: prefs.getBool('cloud_sync') ?? true,
       languageCode: prefs.getString('language_code') ?? systemLanguage,
     );
   }
@@ -138,6 +145,7 @@ class AppSettings {
     await prefs.setBool('keep_screen_on', keepScreenOn);
     await prefs.setBool('haptics', enableHaptics);
     await prefs.setBool('show_ongoing', showOngoing);
+    await prefs.setBool('cloud_sync', cloudSync);
     await prefs.setString('language_code', languageCode);
   }
 }
@@ -194,6 +202,10 @@ class SessionRecord {
   final String? taskId;
 
   bool get isFocus => mode == FocusMode.work;
+
+  /// Stable id for cloud sync, derived from the completion time.
+  String get syncId =>
+      '${mode.name}-${completedAt.microsecondsSinceEpoch.toRadixString(36)}';
 
   Map<String, dynamic> toJson() => {
     'mode': mode.name,

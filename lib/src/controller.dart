@@ -10,13 +10,19 @@ import 'models.dart';
 import 'remote_config.dart';
 import 'services.dart';
 import 'strings.dart';
+import 'sync.dart';
 
 /// Owns the timer, settings, tasks and history. Screens listen to it.
 class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
-  PomodoroController(this._storage, {this.remote, String? forcedLanguage})
-    : _forcedLanguage = forcedLanguage {
+  PomodoroController(
+    this._storage, {
+    this.remote,
+    this.sync,
+    String? forcedLanguage,
+  }) : _forcedLanguage = forcedLanguage {
     AppStrings.overrides = remoteConfig.strings;
     remote?.addListener(_onRemoteChanged);
+    _connectCloud();
     settings = _storage.loadSettings(defaults: remoteConfig.defaults);
     tasks = _storage.loadTasks() ?? [];
     history = _storage.loadHistory();
@@ -48,7 +54,55 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
 
   RemoteConfig get remoteConfig => remote?.config ?? RemoteConfig.empty;
 
+  /// Supabase backup; null when unavailable (tests, no configuration).
+  final SyncService? sync;
+  Timer? _syncDebounce;
+
+  /// Pushes local changes after a short pause so bursts become one request.
+  void _scheduleSync({Duration delay = const Duration(seconds: 3)}) {
+    if (sync == null || !settings.cloudSync) return;
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(delay, syncNow);
+  }
+
+  /// Attaches the Supabase project named in the remote config, if any.
+  Future<void> _connectCloud() async {
+    final s = sync;
+    final url = remoteConfig.cloudUrl;
+    final key = remoteConfig.cloudKey;
+    if (s == null || s.isAvailable || url == null || key == null) return;
+    if (await s.connect(url, key)) _scheduleSync(delay: Duration.zero);
+  }
+
+  Future<void> syncNow() async {
+    final s = sync;
+    if (s == null || !settings.cloudSync) return;
+    await s.sync(
+      tasks: List.of(tasks),
+      history: List.of(history),
+      onPulled: _mergeFromCloud,
+    );
+  }
+
+  void _mergeFromCloud(List<TaskItem> newTasks, List<SessionRecord> sessions) {
+    tasks.addAll(newTasks);
+    history
+      ..addAll(sessions)
+      ..sort((a, b) => a.completedAt.compareTo(b.completedAt));
+    _storage.saveTasks(tasks);
+    _storage.saveHistory(history);
+    notifyListeners();
+  }
+
+  /// Deletes the cloud copy and turns sync off. Local data is kept.
+  Future<bool> deleteCloudData() async {
+    final ok = await sync?.deleteCloudData() ?? false;
+    if (ok) updateSettings(settings.copyWith(cloudSync: false));
+    return ok;
+  }
+
   void _onRemoteChanged() {
+    _connectCloud();
     AppStrings.overrides = remoteConfig.strings;
     // Remote defaults only affect settings the user has never saved.
     final reloaded = _storage.loadSettings(defaults: remoteConfig.defaults);
@@ -103,6 +157,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
     // Timers are throttled in the background; resync with the wall clock.
     if (isRunning) _tick();
     remote?.refresh();
+    _scheduleSync(delay: const Duration(seconds: 1));
   }
 
   void _startTicker() {
@@ -257,6 +312,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
       ),
     );
     _storage.saveHistory(history);
+    _scheduleSync();
 
     mode = settings.enableAutoAdvance ? _nextModeAfter(finished) : finished;
     totalSeconds = settings.minutesFor(mode) * 60;
@@ -301,6 +357,9 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
       _syncNotifications();
     }
     if (old.keepScreenOn != updated.keepScreenOn) _applyWakelock();
+    if (!old.cloudSync && updated.cloudSync) {
+      _scheduleSync(delay: Duration.zero);
+    }
     notifyListeners();
   }
 
@@ -356,6 +415,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
   int deleteTask(TaskItem task) {
     final index = tasks.indexOf(task);
     tasks.removeAt(index);
+    sync?.markTaskDeleted(task.id);
     if (activeTaskId == task.id) activeTaskId = null;
     _saveTasks();
     return index;
@@ -363,10 +423,14 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
 
   void restoreTask(TaskItem task, int index) {
     tasks.insert(index.clamp(0, tasks.length), task);
+    sync?.unmarkTaskDeleted(task.id);
     _saveTasks();
   }
 
   void clearDoneTasks() {
+    for (final t in tasks.where((t) => t.isDone)) {
+      sync?.markTaskDeleted(t.id);
+    }
     tasks.removeWhere((t) => t.isDone);
     _saveTasks();
   }
@@ -374,6 +438,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
   void _saveTasks() {
     _storage.saveTasks(tasks);
     _storage.saveActiveTaskId(activeTaskId);
+    _scheduleSync();
     notifyListeners();
   }
 
@@ -469,6 +534,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
   void resetStats() {
     history.clear();
     _storage.saveHistory(history);
+    if (settings.cloudSync) sync?.resetSessions();
     notifyListeners();
   }
 
@@ -476,6 +542,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     remote?.removeListener(_onRemoteChanged);
+    _syncDebounce?.cancel();
     _ticker?.cancel();
     _completions.close();
     super.dispose();

@@ -17,6 +17,8 @@
   pomodoro sayısı, gün serisi, görevlere göre dağılım
 - **Görevler:** odak görevi seçme, pomodoroların göreve yazılması, kaydırarak silme ve geri alma
 - **Günlük hedef**, ekranı açık tutma, sistem/Türkçe/İngilizce dil seçimi
+- **Bulut yedekleme (Supabase):** anonim hesapla görev ve oturum yedeği, çevrimdışı öncelikli
+  eşitleme, kullanıcı tarafından buluttaki verileri silme
 - **Uzaktan yönetim:** duyurular, günün sözü, metinler, varsayılan ayarlar, özellik açma/kapama ve
   güncelleme uyarıları mağaza güncellemesi olmadan değiştirilebilir (bkz. aşağıda)
 - Kişisel veriler yalnızca cihazda saklanır; hesap ve reklam yoktur
@@ -31,11 +33,13 @@ lib/
   src/models.dart            Ayarlar, görev ve oturum modelleri
   src/services.dart          Kalıcı depolama ve bildirimler
   src/remote_config.dart     GitHub'dan okunan uzaktan ayarlar
+  src/sync.dart              Supabase bulut yedekleme
   src/strings.dart           Türkçe / İngilizce metinler
   src/brand.dart             Renkler ve tema
   src/widgets.dart           Grafik, zamanlayıcı halkası ve ortak bileşenler
   src/screens/               Zamanlayıcı, İstatistik, Görevler, Ayarlar
 remote/config.json          Yayındaki uygulamaların okuduğu uzaktan ayar dosyası
+supabase/schema.sql          Bulut yedekleme veritabanı şeması ve erişim kuralları
 store/                       Play Store görselleri, mağaza metinleri, gizlilik politikası
 ```
 
@@ -71,6 +75,18 @@ flutter run
 2. **Yeni sürüm (kod değişiklikleri):** yeni ekran/özellik/hata düzeltmesi için `pubspec.yaml`
    ve `kAppVersion` sürümünü artırıp yeni `.aab` yükleyin. Ardından `remote/config.json` içinde
    `latestVersion` değerini yeni sürüme çekerek eski sürümdeki kullanıcılara "Güncelle" kartı gösterin.
+
+## Bulut yedeklemeyi açmak (Supabase)
+
+1. https://supabase.com adresinde ücretsiz bir proje oluşturun.
+2. **Authentication > Sign In / Providers** altında **Allow anonymous sign-ins** seçeneğini açın.
+3. **SQL Editor**'de `supabase/schema.sql` dosyasının tamamını çalıştırın.
+4. **Project Settings > API Keys** sayfasından proje adresini ve *publishable* (ya da *anon*) anahtarı alın.
+5. `remote/config.json` içindeki `cloud.url` ve `cloud.publishableKey` alanlarını doldurup GitHub'a kaydedin.
+
+Uygulamalar bir sonraki açılışta bağlanır ve Ayarlar'da **Bulut yedekleme** bölümü görünür.
+Gizlilik politikası bu durumu zaten kapsıyor; Play Console'daki **Veri güvenliği** formunu
+`store/listing.md`'deki notlara göre güncelleyin.
 
 ## Play Store'a yayınlama
 

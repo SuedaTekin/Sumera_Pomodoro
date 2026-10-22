@@ -96,6 +96,8 @@ class RemoteConfig {
     this.storeUrl = kStoreUrl,
     this.privacyPolicyUrl = kPrivacyPolicyUrl,
     this.feedbackEmail,
+    this.cloudUrl,
+    this.cloudKey,
   });
 
   static const empty = RemoteConfig();
@@ -117,6 +119,10 @@ class RemoteConfig {
   final String storeUrl;
   final String privacyPolicyUrl;
   final String? feedbackEmail;
+
+  /// Supabase project for cloud backup; backup is hidden while unset.
+  final String? cloudUrl;
+  final String? cloudKey;
 
   bool feature(String name) => features[name] ?? true;
 
@@ -142,6 +148,12 @@ class RemoteConfig {
   static RemoteConfig parse(Map<String, dynamic> json) {
     final update = json['update'];
     final links = json['links'];
+    final cloud = json['cloud'];
+    final cloudUrl = cloud is Map ? safeUrl(cloud['url']) : null;
+    final cloudKey =
+        cloud is Map && cloud['publishableKey'] is String
+            ? (cloud['publishableKey'] as String).trim()
+            : '';
 
     Map<String, List<String>> quotes = {};
     if (json['quotes'] case final Map q) {
@@ -168,6 +180,13 @@ class RemoteConfig {
     }
 
     return RemoteConfig(
+      cloudUrl:
+          cloudUrl != null &&
+                  cloudUrl.startsWith('https://') &&
+                  cloudKey.isNotEmpty
+              ? cloudUrl
+              : null,
+      cloudKey: cloudKey.isEmpty ? null : cloudKey,
       announcement: Announcement.parse(json['announcement']),
       latestVersion: update is Map ? _version(update['latestVersion']) : null,
       minVersion: update is Map ? _version(update['minVersion']) : null,

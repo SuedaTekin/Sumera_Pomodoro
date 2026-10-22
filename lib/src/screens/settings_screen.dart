@@ -5,6 +5,7 @@ import '../controller.dart';
 import '../models.dart';
 import '../remote_config.dart';
 import '../strings.dart';
+import '../sync.dart';
 import '../widgets.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -207,6 +208,16 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              if (controller.sync case final sync? when sync.isAvailable) ...[
+                SectionHeader(context.tr('cloud')),
+                ListenableBuilder(
+                  listenable: sync,
+                  builder:
+                      (context, _) =>
+                          _CloudCard(controller: controller, sync: sync),
+                ),
+                const SizedBox(height: 16),
+              ],
               SectionHeader(context.tr('data')),
               Card(
                 child: ListTile(
@@ -295,6 +306,114 @@ class SettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _CloudCard extends StatelessWidget {
+  const _CloudCard({required this.controller, required this.sync});
+
+  final PomodoroController controller;
+  final SyncService sync;
+
+  String _status(BuildContext context) {
+    switch (sync.status) {
+      case SyncStatus.syncing:
+        return context.tr('syncing');
+      case SyncStatus.failed:
+        return context.tr('syncFailed');
+      case SyncStatus.idle:
+      case SyncStatus.synced:
+        final at = sync.lastSyncedAt;
+        if (at == null) return context.tr('syncNever');
+        final loc = MaterialLocalizations.of(context);
+        return '${context.tr('syncedAt')}: ${loc.formatShortMonthDay(at)} '
+            '${loc.formatTimeOfDay(TimeOfDay.fromDateTime(at), alwaysUse24HourFormat: true)}';
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: Text(context.tr('deleteCloud')),
+            content: Text(context.tr('deleteCloudConfirm')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(context.tr('cancel')),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                ),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(context.tr('delete')),
+              ),
+            ],
+          ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final ok = await controller.deleteCloudData();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.tr(ok ? 'cloudDeleted' : 'cloudDeleteFailed')),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = controller.settings.cloudSync;
+    final failed = sync.status == SyncStatus.failed;
+
+    return Card(
+      child: Column(
+        children: [
+          SwitchListTile(
+            secondary: const Icon(Icons.cloud_outlined),
+            title: Text(context.tr('cloudSync')),
+            subtitle: Text(context.tr('cloudSyncSubtitle')),
+            value: enabled,
+            onChanged:
+                (v) => controller.updateSettings(
+                  controller.settings.copyWith(cloudSync: v),
+                ),
+          ),
+          if (enabled)
+            ListTile(
+              leading:
+                  sync.status == SyncStatus.syncing
+                      ? const SizedBox.square(
+                        dimension: 24,
+                        child: Padding(
+                          padding: EdgeInsets.all(3),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                      : Icon(
+                        failed
+                            ? Icons.cloud_off_rounded
+                            : Icons.cloud_done_rounded,
+                        color: failed ? Colors.orangeAccent : Brand.success,
+                      ),
+              title: Text(context.tr('syncNow')),
+              subtitle: Text(_status(context)),
+              onTap:
+                  sync.status == SyncStatus.syncing ? null : controller.syncNow,
+            ),
+          ListTile(
+            leading: const Icon(
+              Icons.cloud_off_outlined,
+              color: Colors.redAccent,
+            ),
+            title: Text(context.tr('deleteCloud')),
+            onTap: () => _confirmDelete(context),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -77,6 +77,11 @@
     "en": {}
   },
 
+  "cloud": {
+    "url": "",
+    "publishableKey": ""
+  },
+
   "links": {
     "store": "https://play.google.com/store/apps/details?id=com.sumera.pomodoro",
     "privacyPolicy": "https://github.com/SuedaTekin/pomodoro/blob/main/store/privacy-policy.md",

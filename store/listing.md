@@ -36,7 +36,7 @@ Sumera Pomodoro, dikkatini toplamana ve gününü verimli geçirmene yardımcı 
 
 🔒 GİZLİLİK
 • Hesap gerektirmez, reklam yoktur
-• Tüm verilerin yalnızca cihazında saklanır, hiçbir kişisel veri toplanmaz
+• Ad, e-posta veya konum istenmez; görevlerin anonim olarak yedeklenir ve istediğinde silinir
 
 Türkçe ve İngilizce dil desteği.
 
@@ -78,7 +78,7 @@ Sumera Pomodoro is a clean, beautiful focus timer that helps you concentrate and
 
 🔒 PRIVACY
 • No account, no ads
-• All data stays on your device; no personal data is collected
+• No name, e-mail or location needed; tasks are backed up anonymously and can be deleted anytime
 
 Available in English and Turkish.
 
@@ -90,6 +90,8 @@ Available in English and Turkish.
 - **İçerik derecelendirmesi:** Herkes (anketteki tüm sorulara "Hayır")
 - **Hedef kitle:** 13 yaş ve üzeri
 - **Reklam içeriyor mu:** Hayır
-- **Veri güvenliği (Data safety):** "Uygulama kullanıcı verisi toplamıyor veya paylaşmıyor" seçilebilir.
+- **Veri güvenliği (Data safety):**
+  - Bulut yedekleme **kapalıyken** (`remote/config.json` içinde `cloud.url` boş): "Uygulama kullanıcı verisi toplamıyor veya paylaşmıyor".
+  - Bulut yedekleme **açıkken**: Toplanan veri → *Uygulama etkinliği: Diğer kullanıcı tarafından oluşturulan içerik* (görevler) ve *Uygulama etkinliği: Diğer uygulama işlemleri* (odak oturumları). Amaç: *Uygulama işlevselliği*. Paylaşılmıyor. Aktarımda şifreleniyor: Evet. Kullanıcı silme isteyebilir: Evet (Ayarlar > Buluttaki verilerimi sil). İsteğe bağlı: Evet (kapatılabilir).
 - **Gizlilik politikası URL'si:** https://github.com/SuedaTekin/pomodoro/blob/main/store/privacy-policy.md (önce dosyadaki iletişim e-postasını doldurun).
 - **Grafikler:** `store/icon-512.png` (uygulama simgesi), `store/feature-graphic.png` (öne çıkan görsel, 1024×500). En az 2 telefon ekran görüntüsü gerekir.
