@@ -186,23 +186,28 @@ class _TasksScreenState extends State<TasksScreen> {
                 color: task.isDone ? Brand.textMuted : Brand.textPrimary,
               ),
             ),
-            subtitle: count > 0 || task.estimate > 0
-                ? _TaskProgress(done: count, estimate: task.estimate)
-                : null,
-            trailing: task.isDone
-                ? IconButton(
-                    onPressed: () => _delete(task),
-                    tooltip: context.tr('deleteTask'),
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                  )
-                : IconButton(
-                    onPressed: () => c.setActiveTask(isActive ? null : task.id),
-                    tooltip: context.tr('setActive'),
-                    icon: Icon(
-                      isActive ? Icons.flag_rounded : Icons.outlined_flag_rounded,
-                      color: isActive ? Brand.cyan : Brand.textMuted,
+            subtitle:
+                count > 0 || task.estimate > 0
+                    ? _TaskProgress(done: count, estimate: task.estimate)
+                    : null,
+            trailing:
+                task.isDone
+                    ? IconButton(
+                      onPressed: () => _delete(task),
+                      tooltip: context.tr('deleteTask'),
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                    )
+                    : IconButton(
+                      onPressed:
+                          () => c.setActiveTask(isActive ? null : task.id),
+                      tooltip: context.tr('setActive'),
+                      icon: Icon(
+                        isActive
+                            ? Icons.flag_rounded
+                            : Icons.outlined_flag_rounded,
+                        color: isActive ? Brand.cyan : Brand.textMuted,
+                      ),
                     ),
-                  ),
           ),
         ),
       ),
@@ -218,9 +223,10 @@ class _TaskProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = estimate > 0
-        ? '$done / $estimate ${context.tr('pomodoroCount')}'
-        : '$done ${context.tr('pomodoroCount')}';
+    final label =
+        estimate > 0
+            ? '$done / $estimate ${context.tr('pomodoroCount')}'
+            : '$done ${context.tr('pomodoroCount')}';
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Row(
@@ -306,10 +312,11 @@ class _EditTaskDialogState extends State<_EditTaskDialog> {
           child: Text(context.tr('cancel')),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            (title: _title.text, estimate: _estimate),
-          ),
+          onPressed:
+              () => Navigator.pop(context, (
+                title: _title.text,
+                estimate: _estimate,
+              )),
           child: Text(context.tr('save')),
         ),
       ],

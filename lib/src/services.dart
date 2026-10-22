@@ -20,6 +20,8 @@ class AppStorage {
 
   final SharedPreferences _prefs;
 
+  SharedPreferences get prefs => _prefs;
+
   static const _tasksKey = 'tasks';
   static const _historyKey = 'session_history';
   static const _activeTaskKey = 'active_task';
@@ -30,7 +32,8 @@ class AppStorage {
   /// About three years of daily use.
   static const _maxHistory = 10000;
 
-  AppSettings loadSettings() => AppSettings.fromPrefs(_prefs);
+  AppSettings loadSettings({Map<String, int> defaults = const {}}) =>
+      AppSettings.fromPrefs(_prefs, defaults: defaults);
 
   Future<void> saveSettings(AppSettings settings) => settings.save(_prefs);
 
@@ -49,15 +52,16 @@ class AppStorage {
   }
 
   Future<void> saveTasks(List<TaskItem> tasks) => _prefs.setString(
-        _tasksKey,
-        jsonEncode(tasks.map((t) => t.toJson()).toList()),
-      );
+    _tasksKey,
+    jsonEncode(tasks.map((t) => t.toJson()).toList()),
+  );
 
   String? loadActiveTaskId() => _prefs.getString(_activeTaskKey);
 
-  Future<void> saveActiveTaskId(String? id) => id == null
-      ? _prefs.remove(_activeTaskKey)
-      : _prefs.setString(_activeTaskKey, id);
+  Future<void> saveActiveTaskId(String? id) =>
+      id == null
+          ? _prefs.remove(_activeTaskKey)
+          : _prefs.setString(_activeTaskKey, id);
 
   List<SessionRecord> loadHistory() {
     final raw = _prefs.getString(_historyKey);
@@ -72,9 +76,10 @@ class AppStorage {
   }
 
   Future<void> saveHistory(List<SessionRecord> history) {
-    final trimmed = history.length > _maxHistory
-        ? history.sublist(history.length - _maxHistory)
-        : history;
+    final trimmed =
+        history.length > _maxHistory
+            ? history.sublist(history.length - _maxHistory)
+            : history;
     return _prefs.setString(
       _historyKey,
       jsonEncode(trimmed.map((r) => r.toJson()).toList()),
@@ -129,7 +134,8 @@ class NotificationService {
     await _notifications.initialize(initSettings);
     await _notifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
     _initialized = true;
   }
@@ -139,8 +145,10 @@ class NotificationService {
       android: AndroidNotificationDetails(
         'pomodoro_channel',
         'Pomodoro',
-        channelDescription:
-            AppStrings.forLanguage(languageCode, 'notificationChannel'),
+        channelDescription: AppStrings.forLanguage(
+          languageCode,
+          'notificationChannel',
+        ),
         importance: Importance.max,
         priority: Priority.high,
         playSound: true,
@@ -164,8 +172,11 @@ class NotificationService {
     String t(String key) => AppStrings.forLanguage(languageCode, key);
 
     try {
-      final android = _notifications.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final android =
+          _notifications
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
       final canUseExact =
           await android?.canScheduleExactNotifications() ?? true;
 
@@ -175,9 +186,10 @@ class NotificationService {
         t(isWork ? 'notificationBodyWork' : 'notificationBodyBreak'),
         tz.TZDateTime.from(at, tz.UTC),
         _details(languageCode),
-        androidScheduleMode: canUseExact
-            ? AndroidScheduleMode.exactAllowWhileIdle
-            : AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode:
+            canUseExact
+                ? AndroidScheduleMode.exactAllowWhileIdle
+                : AndroidScheduleMode.inexactAllowWhileIdle,
         payload: mode.name,
       );
     } catch (error) {
@@ -208,8 +220,10 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'pomodoro_ongoing',
             AppStrings.forLanguage(languageCode, 'ongoingChannel'),
-            channelDescription:
-                AppStrings.forLanguage(languageCode, 'ongoingChannelDescription'),
+            channelDescription: AppStrings.forLanguage(
+              languageCode,
+              'ongoingChannelDescription',
+            ),
             importance: Importance.low,
             priority: Priority.low,
             ongoing: true,

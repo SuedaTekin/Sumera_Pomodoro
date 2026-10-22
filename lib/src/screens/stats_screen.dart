@@ -80,10 +80,11 @@ class _StatsScreenState extends State<StatsScreen> {
             ButtonSegment(value: 30, label: Text(context.tr('month'))),
           ],
           selected: {_range},
-          onSelectionChanged: (s) => setState(() {
-            _range = s.first;
-            _selected = null;
-          }),
+          onSelectionChanged:
+              (s) => setState(() {
+                _range = s.first;
+                _selected = null;
+              }),
         ),
         const SizedBox(height: 16),
         GridView.count(
@@ -101,7 +102,10 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
             StatTile(
               label: context.tr('dailyAverage'),
-              value: AppStrings.duration(context, (totalMinutes / _range).round()),
+              value: AppStrings.duration(
+                context,
+                (totalMinutes / _range).round(),
+              ),
               icon: Icons.show_chart_rounded,
             ),
             StatTile(
@@ -161,7 +165,8 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
                 const SizedBox(height: 16),
                 Semantics(
-                  label: '${context.tr('focusByDay')}: '
+                  label:
+                      '${context.tr('focusByDay')}: '
                       '${AppStrings.duration(context, totalMinutes)}',
                   child: FocusBarChart(
                     data: days,
@@ -169,19 +174,26 @@ class _StatsScreenState extends State<StatsScreen> {
                     onSelect: (i) => setState(() => _selected = i),
                     goalMinutes: goalMinutes,
                     goalLabel: context.tr('goal'),
-                    yLabel: (m) => m >= 60 && m % 60 == 0
-                        ? '${m ~/ 60}${context.tr('hoursShort')}'
-                        : '$m${context.tr('minutesShort')}',
-                    xLabel: (i, d) => _range == 7
-                        ? _weekdays[lang]![d.day.weekday - 1]
-                        : '${d.day.day}',
+                    yLabel:
+                        (m) =>
+                            m >= 60 && m % 60 == 0
+                                ? '${m ~/ 60}${context.tr('hoursShort')}'
+                                : '$m${context.tr('minutesShort')}',
+                    xLabel:
+                        (i, d) =>
+                            _range == 7
+                                ? _weekdays[lang]![d.day.weekday - 1]
+                                : '${d.day.day}',
                   ),
                 ),
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
                     context.tr('tapBarHint'),
-                    style: const TextStyle(color: Brand.textMuted, fontSize: 12),
+                    style: const TextStyle(
+                      color: Brand.textMuted,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -198,50 +210,57 @@ class _StatsScreenState extends State<StatsScreen> {
               style: const TextStyle(color: Brand.textSecondary, fontSize: 13),
             ),
           ),
-        const SizedBox(height: 20),
-        SectionHeader(context.tr('activity')),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: () {
-              final today = DateTime.now();
-              // Start on the Monday 15 weeks before this week's Monday.
-              final span = 15 * 7 + today.weekday;
-              final heat = c.dayStats(span);
-              return ActivityHeatmap(
-                days: heat,
-                goalMinutes: goalMinutes,
-                rowLabels: _weekdays[lang]!,
-                lessLabel: context.tr('less'),
-                moreLabel: context.tr('more'),
-                tooltip: (d) => '${loc.formatMediumDate(d.day)} · '
-                    '${AppStrings.duration(context, d.minutes)}',
-              );
-            }(),
+        if (c.remoteConfig.feature('heatmap')) ...[
+          const SizedBox(height: 20),
+          SectionHeader(context.tr('activity')),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: () {
+                final today = DateTime.now();
+                // Start on the Monday 15 weeks before this week's Monday.
+                final span = 15 * 7 + today.weekday;
+                final heat = c.dayStats(span);
+                return ActivityHeatmap(
+                  days: heat,
+                  goalMinutes: goalMinutes,
+                  rowLabels: _weekdays[lang]!,
+                  lessLabel: context.tr('less'),
+                  moreLabel: context.tr('more'),
+                  tooltip:
+                      (d) =>
+                          '${loc.formatMediumDate(d.day)} · '
+                          '${AppStrings.duration(context, d.minutes)}',
+                );
+              }(),
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-        SectionHeader(context.tr('focusByTask')),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: tasks.isEmpty
-                ? Text(
-                    context.tr('noTaskData'),
-                    style: const TextStyle(color: Brand.textSecondary),
-                  )
-                : Column(
-                    children: [
-                      for (final t in tasks.take(6))
-                        _TaskBar(
-                          title: t.title,
-                          minutes: t.minutes,
-                          fraction: t.minutes / tasks.first.minutes,
-                        ),
-                    ],
-                  ),
+        ],
+        if (c.remoteConfig.feature('taskBreakdown')) ...[
+          const SizedBox(height: 20),
+          SectionHeader(context.tr('focusByTask')),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child:
+                  tasks.isEmpty
+                      ? Text(
+                        context.tr('noTaskData'),
+                        style: const TextStyle(color: Brand.textSecondary),
+                      )
+                      : Column(
+                        children: [
+                          for (final t in tasks.take(6))
+                            _TaskBar(
+                              title: t.title,
+                              minutes: t.minutes,
+                              fraction: t.minutes / tasks.first.minutes,
+                            ),
+                        ],
+                      ),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -285,19 +304,23 @@ class _TaskBar extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           LayoutBuilder(
-            builder: (context, constraints) => Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 8,
-                width: (constraints.maxWidth * fraction).clamp(4.0, constraints.maxWidth),
-                decoration: BoxDecoration(
-                  color: Brand.chartBar,
-                  borderRadius: const BorderRadius.horizontal(
-                    right: Radius.circular(4),
+            builder:
+                (context, constraints) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    height: 8,
+                    width: (constraints.maxWidth * fraction).clamp(
+                      4.0,
+                      constraints.maxWidth,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Brand.chartBar,
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(4),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
           ),
         ],
       ),

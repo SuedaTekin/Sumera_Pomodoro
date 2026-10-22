@@ -1,9 +1,12 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'src/app.dart';
 import 'src/brand.dart';
 import 'src/controller.dart';
+import 'src/remote_config.dart';
 import 'src/services.dart';
 
 Future<void> main() async {
@@ -27,5 +30,9 @@ Future<void> main() async {
   }
 
   final storage = await AppStorage.open();
-  runApp(SumeraApp(controller: PomodoroController(storage)));
+  final remote = RemoteConfigService(storage.prefs);
+  final controller = PomodoroController(storage, remote: remote);
+  runApp(SumeraApp(controller: controller));
+  // Picks up announcements and changes published after this build.
+  unawaited(remote.refresh(force: true));
 }

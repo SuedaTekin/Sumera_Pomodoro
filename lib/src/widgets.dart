@@ -123,9 +123,10 @@ class _BarChartPainter extends CustomPainter {
     double yOf(num minutes) => baseY - (minutes / yMax) * plotH;
 
     // Recessive grid + y labels.
-    final grid = Paint()
-      ..color = Brand.chartGrid
-      ..strokeWidth = 1;
+    final grid =
+        Paint()
+          ..color = Brand.chartGrid
+          ..strokeWidth = 1;
     for (var v = 0; v <= yMax; v += step) {
       final y = yOf(v);
       canvas.drawLine(Offset(left, y), Offset(size.width, y), grid);
@@ -155,8 +156,7 @@ class _BarChartPainter extends CustomPainter {
         );
         canvas.drawRRect(
           rect,
-          Paint()
-            ..color = selected ? Brand.chartBarSelected : Brand.chartBar,
+          Paint()..color = selected ? Brand.chartBarSelected : Brand.chartBar,
         );
       }
 
@@ -181,9 +181,10 @@ class _BarChartPainter extends CustomPainter {
           selected ? Brand.textPrimary : Brand.textMuted,
           weight: selected ? FontWeight.w700 : null,
         );
-        final x = (cx - label.width / 2)
-            .clamp(left - 4, size.width - label.width)
-            .toDouble();
+        final x =
+            (cx - label.width / 2)
+                .clamp(left - 4, size.width - label.width)
+                .toDouble();
         label.paint(canvas, Offset(x, baseY + 6));
       }
     }
@@ -192,9 +193,10 @@ class _BarChartPainter extends CustomPainter {
     final goal = goalMinutes;
     if (goal != null && goal > 0) {
       final y = yOf(goal);
-      final dash = Paint()
-        ..color = Brand.textSecondary
-        ..strokeWidth = 1.5;
+      final dash =
+          Paint()
+            ..color = Brand.textSecondary
+            ..strokeWidth = 1.5;
       for (var x = left; x < size.width; x += 8) {
         canvas.drawLine(
           Offset(x, y),
@@ -256,10 +258,11 @@ class TimerRing extends StatelessWidget {
         tween: Tween(end: progress),
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeOut,
-        builder: (context, value, child) => CustomPaint(
-          painter: _RingPainter(value),
-          child: Center(child: child),
-        ),
+        builder:
+            (context, value, child) => CustomPaint(
+              painter: _RingPainter(value),
+              child: Center(child: child),
+            ),
         child: child,
       ),
     );
@@ -426,9 +429,11 @@ class NumberStepper extends StatelessWidget {
           ],
           Expanded(child: Text(label, style: const TextStyle(fontSize: 16))),
           IconButton(
-            onPressed: value > range.min
-                ? () => onChanged((value - step).clamp(range.min, range.max))
-                : null,
+            onPressed:
+                value > range.min
+                    ? () =>
+                        onChanged((value - step).clamp(range.min, range.max))
+                    : null,
             icon: const Icon(Icons.remove_circle_outline_rounded),
           ),
           SizedBox(
@@ -443,9 +448,11 @@ class NumberStepper extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: value < range.max
-                ? () => onChanged((value + step).clamp(range.min, range.max))
-                : null,
+            onPressed:
+                value < range.max
+                    ? () =>
+                        onChanged((value + step).clamp(range.min, range.max))
+                    : null,
             icon: const Icon(Icons.add_circle_outline_rounded),
           ),
         ],
@@ -479,9 +486,10 @@ class ActivityHeatmap extends StatelessWidget {
 
   static const _levels = [0.0, 0.3, 0.55, 0.8, 1.0];
 
-  static Color colorFor(int level) => level == 0
-      ? Brand.surfaceHigh
-      : Color.lerp(Brand.surfaceHigh, Brand.chartBar, _levels[level])!;
+  static Color colorFor(int level) =>
+      level == 0
+          ? Brand.surfaceHigh
+          : Color.lerp(Brand.surfaceHigh, Brand.chartBar, _levels[level])!;
 
   int _level(int minutes) {
     if (minutes <= 0) return 0;
@@ -500,16 +508,18 @@ class ActivityHeatmap extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cell =
-            ((constraints.maxWidth - labelWidth) / weeks - gap).clamp(6.0, 22.0);
+        final cell = ((constraints.maxWidth - labelWidth) / weeks - gap).clamp(
+          6.0,
+          22.0,
+        );
         Widget square(Color color) => Container(
-              width: cell,
-              height: cell,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            );
+          width: cell,
+          height: cell,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        );
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,6 +605,102 @@ class ActivityHeatmap extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Banner for remote announcements and "update available" notices.
+class AnnouncementCard extends StatelessWidget {
+  const AnnouncementCard({
+    super.key,
+    required this.message,
+    this.title,
+    this.buttonText,
+    this.onButton,
+    this.onDismiss,
+    this.style = 'info',
+    this.dismissTooltip,
+  });
+
+  final String? title;
+  final String message;
+  final String? buttonText;
+  final VoidCallback? onButton;
+  final VoidCallback? onDismiss;
+  final String style;
+  final String? dismissTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final (accent, icon) = switch (style) {
+      'success' => (Brand.success, Icons.celebration_rounded),
+      'warning' => (const Color(0xFFFBBF24), Icons.warning_amber_rounded),
+      _ => (Brand.cyan, Icons.campaign_rounded),
+    };
+
+    return Card(
+      color: Color.lerp(Brand.surface, accent, 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: accent.withAlpha(110)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 4, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icon, color: accent),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title != null) ...[
+                    Text(
+                      title!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                  Text(
+                    message,
+                    style: const TextStyle(color: Brand.textSecondary),
+                  ),
+                  if (buttonText != null && onButton != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: TextButton(
+                        onPressed: onButton,
+                        style: TextButton.styleFrom(
+                          foregroundColor: accent,
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 36),
+                        ),
+                        child: Text(
+                          buttonText!,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (onDismiss != null)
+              IconButton(
+                onPressed: onDismiss,
+                tooltip: dismissTooltip,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close_rounded, size: 20),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -7,14 +7,17 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'brand.dart';
 import 'models.dart';
+import 'remote_config.dart';
 import 'services.dart';
 import 'strings.dart';
 
 /// Owns the timer, settings, tasks and history. Screens listen to it.
 class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
-  PomodoroController(this._storage, {String? forcedLanguage})
-      : _forcedLanguage = forcedLanguage {
-    settings = _storage.loadSettings();
+  PomodoroController(this._storage, {this.remote, String? forcedLanguage})
+    : _forcedLanguage = forcedLanguage {
+    AppStrings.overrides = remoteConfig.strings;
+    remote?.addListener(_onRemoteChanged);
+    settings = _storage.loadSettings(defaults: remoteConfig.defaults);
     tasks = _storage.loadTasks() ?? [];
     history = _storage.loadHistory();
     activeTaskId = _storage.loadActiveTaskId();
@@ -39,6 +42,23 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
 
   final AppStorage _storage;
   final String? _forcedLanguage;
+
+  /// Live config downloaded from GitHub; null in tests.
+  final RemoteConfigService? remote;
+
+  RemoteConfig get remoteConfig => remote?.config ?? RemoteConfig.empty;
+
+  void _onRemoteChanged() {
+    AppStrings.overrides = remoteConfig.strings;
+    // Remote defaults only affect settings the user has never saved.
+    final reloaded = _storage.loadSettings(defaults: remoteConfig.defaults);
+    if (isPristine && reloaded.minutesFor(mode) != settings.minutesFor(mode)) {
+      totalSeconds = reloaded.minutesFor(mode) * 60;
+      remainingSeconds = totalSeconds;
+    }
+    settings = reloaded;
+    notifyListeners();
+  }
 
   late AppSettings settings;
   late List<TaskItem> tasks;
@@ -79,8 +99,10 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
     // Timers are throttled in the background; resync with the wall clock.
-    if (state == AppLifecycleState.resumed && isRunning) _tick();
+    if (isRunning) _tick();
+    remote?.refresh();
   }
 
   void _startTicker() {
@@ -318,7 +340,11 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
     if (isRunning) _syncNotifications();
   }
 
-  void updateTask(TaskItem task, {required String title, required int estimate}) {
+  void updateTask(
+    TaskItem task, {
+    required String title,
+    required int estimate,
+  }) {
     final text = title.trim();
     if (text.isNotEmpty) task.title = text;
     task.estimate = estimate;
@@ -360,9 +386,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
 
   int get todayPomodoros {
     final today = dateOnly(DateTime.now());
-    return _focusSessions
-        .where((r) => dateOnly(r.completedAt) == today)
-        .length;
+    return _focusSessions.where((r) => dateOnly(r.completedAt) == today).length;
   }
 
   int get todayFocusMinutes {
@@ -451,6 +475,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    remote?.removeListener(_onRemoteChanged);
     _ticker?.cancel();
     _completions.close();
     super.dispose();

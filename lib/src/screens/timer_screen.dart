@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../brand.dart';
 import '../controller.dart';
 import '../models.dart';
+import '../remote_config.dart';
 import '../strings.dart';
 import '../widgets.dart';
 import 'fullscreen_timer.dart';
@@ -67,6 +68,62 @@ class TimerScreen extends StatelessWidget {
     );
   }
 
+  String? _quote(BuildContext context) {
+    final config = controller.remoteConfig;
+    if (!config.feature('quotes')) return null;
+    return config.quoteOfTheDay(
+      Localizations.localeOf(context).languageCode,
+      DateTime.now(),
+    );
+  }
+
+  List<Widget> _remoteBanners(BuildContext context) {
+    final remote = controller.remote;
+    if (remote == null) return const [];
+    final config = remote.config;
+    final lang = Localizations.localeOf(context).languageCode;
+    final banners = <Widget>[];
+
+    if (remote.showUpdateNotice) {
+      banners.add(
+        AnnouncementCard(
+          title: context.tr('updateAvailable'),
+          message:
+              config.updateMessage?.resolve(lang) ??
+              context.tr('updateAvailableBody'),
+          buttonText: context.tr('update'),
+          onButton: () => openExternal(config.storeUrl),
+          onDismiss: () => remote.dismissAnnouncement(remote.updateNoticeId),
+          dismissTooltip: context.tr('dismiss'),
+          style: 'success',
+        ),
+      );
+    }
+
+    final a = remote.visibleAnnouncement;
+    if (a != null) {
+      banners.add(
+        AnnouncementCard(
+          title: a.title?.resolve(lang),
+          message: a.message.resolve(lang),
+          buttonText:
+              a.url == null
+                  ? null
+                  : a.buttonText?.resolve(lang) ?? context.tr('learnMore'),
+          onButton: a.url == null ? null : () => openExternal(a.url!),
+          onDismiss:
+              a.dismissible ? () => remote.dismissAnnouncement(a.id) : null,
+          dismissTooltip: context.tr('dismiss'),
+          style: a.style,
+        ),
+      );
+    }
+
+    return [
+      for (final b in banners) ...[b, const SizedBox(height: 12)],
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -95,12 +152,17 @@ class TimerScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             children: [
+              ..._remoteBanners(context),
               _ModeSelector(controller: c),
               const SizedBox(height: 16),
               _TimerCard(controller: c, format: _format),
               const SizedBox(height: 16),
               _GoalCard(controller: c),
               const SizedBox(height: 12),
+              if (_quote(context) case final quote?) ...[
+                _QuoteCard(text: quote),
+                const SizedBox(height: 12),
+              ],
               Card(
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(
@@ -245,17 +307,18 @@ class _TimerCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: -14,
-                  right: -6,
-                  child: IconButton(
-                    onPressed: () => openFullscreenTimer(context, c),
-                    tooltip: context.tr('fullscreen'),
-                    color: Colors.white,
-                    iconSize: 28,
-                    icon: const Icon(Icons.open_in_full_rounded),
+                if (c.remoteConfig.feature('fullscreen'))
+                  Positioned(
+                    top: -14,
+                    right: -6,
+                    child: IconButton(
+                      onPressed: () => openFullscreenTimer(context, c),
+                      tooltip: context.tr('fullscreen'),
+                      color: Colors.white,
+                      iconSize: 28,
+                      icon: const Icon(Icons.open_in_full_rounded),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -387,6 +450,52 @@ class _GoalCard extends StatelessWidget {
               '${context.tr('focusTime')}: '
               '${AppStrings.duration(context, controller.todayFocusMinutes)}',
               style: const TextStyle(color: Brand.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuoteCard extends StatelessWidget {
+  const _QuoteCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.format_quote_rounded, color: Brand.chartBar),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('quoteOfDay'),
+                    style: const TextStyle(
+                      color: Brand.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    text,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

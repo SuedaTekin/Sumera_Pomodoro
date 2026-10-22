@@ -30,24 +30,24 @@ class Brand {
 
 extension FocusModeStyle on FocusMode {
   List<Color> get gradient => switch (this) {
-        FocusMode.work => const [Brand.violet, Brand.deep],
-        FocusMode.shortBreak => const [Color(0xFF14B8A6), Color(0xFF0E5E6F)],
-        FocusMode.longBreak => const [Color(0xFF3B82F6), Color(0xFF1E2F7A)],
-      };
+    FocusMode.work => const [Brand.violet, Brand.deep],
+    FocusMode.shortBreak => const [Color(0xFF14B8A6), Color(0xFF0E5E6F)],
+    FocusMode.longBreak => const [Color(0xFF3B82F6), Color(0xFF1E2F7A)],
+  };
 
   Color get accent => gradient.first;
 
   String get labelKey => switch (this) {
-        FocusMode.work => 'workMode',
-        FocusMode.shortBreak => 'shortBreakMode',
-        FocusMode.longBreak => 'longBreakMode',
-      };
+    FocusMode.work => 'workMode',
+    FocusMode.shortBreak => 'shortBreakMode',
+    FocusMode.longBreak => 'longBreakMode',
+  };
 
   String get descriptionKey => switch (this) {
-        FocusMode.work => 'focusDescription',
-        FocusMode.shortBreak => 'shortBreakDescription',
-        FocusMode.longBreak => 'longBreakDescription',
-      };
+    FocusMode.work => 'focusDescription',
+    FocusMode.shortBreak => 'shortBreakDescription',
+    FocusMode.longBreak => 'longBreakDescription',
+  };
 }
 
 ThemeData buildTheme() {

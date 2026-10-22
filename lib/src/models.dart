@@ -47,10 +47,10 @@ class AppSettings {
   final String languageCode;
 
   int minutesFor(FocusMode mode) => switch (mode) {
-        FocusMode.work => workMinutes,
-        FocusMode.shortBreak => shortBreakMinutes,
-        FocusMode.longBreak => longBreakMinutes,
-      };
+    FocusMode.work => workMinutes,
+    FocusMode.shortBreak => shortBreakMinutes,
+    FocusMode.longBreak => longBreakMinutes,
+  };
 
   AppSettings copyWith({
     int? workMinutes,
@@ -86,19 +86,36 @@ class AppSettings {
     return (value ?? fallback).clamp(range.min, range.max);
   }
 
-  static AppSettings fromPrefs(SharedPreferences prefs) {
+  /// [defaults] (from the remote config) replace the built-in fallbacks for
+  /// settings the user has never saved.
+  static AppSettings fromPrefs(
+    SharedPreferences prefs, {
+    Map<String, int> defaults = const {},
+  }) {
+    int read(String key, String remoteKey, int fallback, IntRange range) =>
+        _clamp(prefs.getInt(key), defaults[remoteKey] ?? fallback, range);
+
     return AppSettings(
-      workMinutes: _clamp(prefs.getInt('work_minutes'), 25, workRange),
-      shortBreakMinutes:
-          _clamp(prefs.getInt('short_break_minutes'), 5, shortBreakRange),
-      longBreakMinutes:
-          _clamp(prefs.getInt('long_break_minutes'), 15, longBreakRange),
-      longBreakInterval: _clamp(
-        prefs.getInt('long_break_interval'),
+      workMinutes: read('work_minutes', 'workMinutes', 25, workRange),
+      shortBreakMinutes: read(
+        'short_break_minutes',
+        'shortBreakMinutes',
+        5,
+        shortBreakRange,
+      ),
+      longBreakMinutes: read(
+        'long_break_minutes',
+        'longBreakMinutes',
+        15,
+        longBreakRange,
+      ),
+      longBreakInterval: read(
+        'long_break_interval',
+        'longBreakInterval',
         4,
         longBreakIntervalRange,
       ),
-      dailyGoal: _clamp(prefs.getInt('daily_goal'), 8, dailyGoalRange),
+      dailyGoal: read('daily_goal', 'dailyGoal', 8, dailyGoalRange),
       enableNotifications: prefs.getBool('notifications_enabled') ?? true,
       enableAutoAdvance: prefs.getBool('auto_advance') ?? true,
       enableAutoStart: prefs.getBool('auto_start') ?? false,
@@ -134,12 +151,12 @@ class TaskItem {
   });
 
   factory TaskItem.fromJson(Map<String, dynamic> json, int index) => TaskItem(
-        // Tasks saved by older versions have no id.
-        id: json['id'] as String? ?? 'legacy-$index',
-        title: json['title'] as String,
-        isDone: json['done'] as bool? ?? false,
-        estimate: json['estimate'] as int? ?? 0,
-      );
+    // Tasks saved by older versions have no id.
+    id: json['id'] as String? ?? 'legacy-$index',
+    title: json['title'] as String,
+    isDone: json['done'] as bool? ?? false,
+    estimate: json['estimate'] as int? ?? 0,
+  );
 
   final String id;
   String title;
@@ -149,11 +166,11 @@ class TaskItem {
   int estimate;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'done': isDone,
-        if (estimate > 0) 'estimate': estimate,
-      };
+    'id': id,
+    'title': title,
+    'done': isDone,
+    if (estimate > 0) 'estimate': estimate,
+  };
 }
 
 class SessionRecord {
@@ -165,11 +182,11 @@ class SessionRecord {
   });
 
   factory SessionRecord.fromJson(Map<String, dynamic> json) => SessionRecord(
-        mode: FocusMode.values.byName(json['mode'] as String),
-        completedAt: DateTime.parse(json['at'] as String),
-        minutes: json['minutes'] as int? ?? 0,
-        taskId: json['task'] as String?,
-      );
+    mode: FocusMode.values.byName(json['mode'] as String),
+    completedAt: DateTime.parse(json['at'] as String),
+    minutes: json['minutes'] as int? ?? 0,
+    taskId: json['task'] as String?,
+  );
 
   final FocusMode mode;
   final DateTime completedAt;
@@ -179,11 +196,11 @@ class SessionRecord {
   bool get isFocus => mode == FocusMode.work;
 
   Map<String, dynamic> toJson() => {
-        'mode': mode.name,
-        'at': completedAt.toIso8601String(),
-        'minutes': minutes,
-        if (taskId != null) 'task': taskId,
-      };
+    'mode': mode.name,
+    'at': completedAt.toIso8601String(),
+    'minutes': minutes,
+    if (taskId != null) 'task': taskId,
+  };
 }
 
 /// Focus totals for one calendar day.

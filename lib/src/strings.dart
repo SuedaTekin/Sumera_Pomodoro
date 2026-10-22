@@ -63,7 +63,8 @@ class AppStrings {
       'noTaskData': 'Görevle ilişkilendirilmiş oturum yok.',
       'goal': 'Hedef',
       'tapBarHint': 'Ayrıntı için bir çubuğa dokun',
-      'noStats': 'İlk pomodoronu tamamladığında istatistiklerin burada görünecek.',
+      'noStats':
+          'İlk pomodoronu tamamladığında istatistiklerin burada görünecek.',
       'timerSection': 'Zamanlayıcı',
       'durations': 'Süreler',
       'longBreakEvery': 'Uzun mola sıklığı',
@@ -95,9 +96,11 @@ class AppStrings {
       'privacyPolicy': 'Gizlilik politikası',
       'privacyText':
           'Sumera Pomodoro hiçbir kişisel veri toplamaz, paylaşmaz veya '
-              'internete göndermez. Görevlerin, ayarların ve istatistiklerin '
-              'yalnızca bu cihazda saklanır ve uygulamayı kaldırdığında silinir. '
-              'Bildirim izni yalnızca süre bittiğinde seni uyarmak için kullanılır.',
+          'internete göndermez. Görevlerin, ayarların ve istatistiklerin '
+          'yalnızca bu cihazda saklanır ve uygulamayı kaldırdığında silinir. '
+          'Uygulama yalnızca duyuru ve ayar dosyasını indirmek için internete '
+          'bağlanır; bu sırada senden hiçbir bilgi gönderilmez. Bildirim izni '
+          'yalnızca süre bittiğinde seni uyarmak için kullanılır.',
       'licenses': 'Açık kaynak lisansları',
       'close': 'Kapat',
       'endsAt': 'Bitiş:',
@@ -116,6 +119,18 @@ class AppStrings {
       'activity': 'Son 16 hafta',
       'less': 'Az',
       'more': 'Çok',
+      'updateAvailable': 'Yeni sürüm hazır',
+      'updateAvailableBody':
+          'Yeni özellikler ve iyileştirmeler için uygulamayı güncelle.',
+      'updateRequired': 'Güncelleme gerekli',
+      'updateRequiredBody':
+          'Bu sürüm artık desteklenmiyor. Devam etmek için uygulamayı güncelle.',
+      'update': 'Güncelle',
+      'dismiss': 'Kapat',
+      'quoteOfDay': 'Günün sözü',
+      'learnMore': 'Daha fazla',
+      'rateApp': 'Uygulamayı değerlendir',
+      'sendFeedback': 'Geri bildirim gönder',
       'minutesShort': 'dk',
       'hoursShort': 'sa',
     },
@@ -210,17 +225,21 @@ class AppStrings {
       'privacyPolicy': 'Privacy policy',
       'privacyText':
           'Sumera Pomodoro does not collect, share or upload any personal data. '
-              'Your tasks, settings and statistics are stored only on this '
-              'device and are removed when you uninstall the app. The '
-              'notification permission is used only to alert you when a '
-              'session ends.',
+          'Your tasks, settings and statistics are stored only on this '
+          'device and are removed when you uninstall the app. The app '
+          'connects to the internet only to download its announcement and '
+          'settings file; no information about you is sent. The '
+          'notification permission is used only to alert you when a '
+          'session ends.',
       'licenses': 'Open source licenses',
       'close': 'Close',
       'endsAt': 'Ends at',
       'ongoingChannel': 'Running timer',
-      'ongoingChannelDescription': 'Shows the remaining time while the timer runs',
+      'ongoingChannelDescription':
+          'Shows the remaining time while the timer runs',
       'showOngoing': 'Countdown in notification',
-      'showOngoingSubtitle': 'Show the remaining time in the notification shade',
+      'showOngoingSubtitle':
+          'Show the remaining time in the notification shade',
       'fullscreen': 'Full screen',
       'exitFullscreen': 'Exit full screen',
       'fullscreenHint': 'Tap the screen for controls',
@@ -232,13 +251,31 @@ class AppStrings {
       'activity': 'Last 16 weeks',
       'less': 'Less',
       'more': 'More',
+      'updateAvailable': 'A new version is ready',
+      'updateAvailableBody':
+          'Update the app to get new features and improvements.',
+      'updateRequired': 'Update required',
+      'updateRequiredBody':
+          'This version is no longer supported. Please update to continue.',
+      'update': 'Update',
+      'dismiss': 'Dismiss',
+      'quoteOfDay': 'Quote of the day',
+      'learnMore': 'Learn more',
+      'rateApp': 'Rate the app',
+      'sendFeedback': 'Send feedback',
       'minutesShort': 'min',
       'hoursShort': 'h',
     },
   };
 
+  /// Remote overrides from the live config (language -> key -> text).
+  static Map<String, Map<String, String>> overrides = const {};
+
   static String forLanguage(String languageCode, String key) {
-    return _values[languageCode]?[key] ?? _values['en']?[key] ?? key;
+    return overrides[languageCode]?[key] ??
+        _values[languageCode]?[key] ??
+        _values['en']?[key] ??
+        key;
   }
 
   static String of(BuildContext context, String key) {

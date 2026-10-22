@@ -14,15 +14,16 @@ void openFullscreenTimer(BuildContext context, PomodoroController controller) {
       transitionDuration: const Duration(milliseconds: 350),
       reverseTransitionDuration: const Duration(milliseconds: 250),
       pageBuilder: (_, __, ___) => FullscreenTimerPage(controller: controller),
-      transitionsBuilder: (_, animation, __, child) => FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: Tween(begin: 0.96, end: 1.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+      transitionsBuilder:
+          (_, animation, __, child) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween(begin: 0.96, end: 1.0).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
+              child: child,
+            ),
           ),
-          child: child,
-        ),
-      ),
     ),
   );
 }
@@ -130,9 +131,10 @@ class _FullscreenTimerPageState extends State<FullscreenTimerPage> {
                     return Stack(
                       children: [
                         Positioned.fill(
-                          child: landscape
-                              ? _buildLandscape(context, box)
-                              : _buildPortrait(context, box),
+                          child:
+                              landscape
+                                  ? _buildLandscape(context, box)
+                                  : _buildPortrait(context, box),
                         ),
                         _buildTopBar(context),
                         Positioned(
@@ -207,7 +209,8 @@ class _FullscreenTimerPageState extends State<FullscreenTimerPage> {
         _caption(context),
         const SizedBox(height: 28),
         Semantics(
-          label: '${context.tr(c.mode.labelKey)} ${_format(c.remainingSeconds)}',
+          label:
+              '${context.tr(c.mode.labelKey)} ${_format(c.remainingSeconds)}',
           child: TimerRing(
             progress: c.progress,
             size: ring,
@@ -229,10 +232,7 @@ class _FullscreenTimerPageState extends State<FullscreenTimerPage> {
       children: [
         _caption(context),
         const SizedBox(height: 8),
-        SizedBox(
-          height: box.maxHeight * 0.5,
-          child: _time(width),
-        ),
+        SizedBox(height: box.maxHeight * 0.5, child: _time(width)),
         const SizedBox(height: 16),
         SizedBox(
           width: width,
@@ -241,12 +241,13 @@ class _FullscreenTimerPageState extends State<FullscreenTimerPage> {
             child: TweenAnimationBuilder<double>(
               tween: Tween(end: c.progress),
               duration: const Duration(milliseconds: 400),
-              builder: (context, value, _) => LinearProgressIndicator(
-                value: value,
-                minHeight: 8,
-                backgroundColor: Colors.white24,
-                color: Brand.cyan,
-              ),
+              builder:
+                  (context, value, _) => LinearProgressIndicator(
+                    value: value,
+                    minHeight: 8,
+                    backgroundColor: Colors.white24,
+                    color: Brand.cyan,
+                  ),
             ),
           ),
         ),

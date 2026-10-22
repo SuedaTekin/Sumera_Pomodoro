@@ -36,7 +36,7 @@ Sumera Pomodoro, dikkatini toplamana ve gününü verimli geçirmene yardımcı 
 
 🔒 GİZLİLİK
 • Hesap gerektirmez, reklam yoktur
-• Tüm verilerin yalnızca cihazında saklanır, hiçbir veri toplanmaz
+• Tüm verilerin yalnızca cihazında saklanır, hiçbir kişisel veri toplanmaz
 
 Türkçe ve İngilizce dil desteği.
 
@@ -78,7 +78,7 @@ Sumera Pomodoro is a clean, beautiful focus timer that helps you concentrate and
 
 🔒 PRIVACY
 • No account, no ads
-• All data stays on your device; nothing is collected
+• All data stays on your device; no personal data is collected
 
 Available in English and Turkish.
 
@@ -91,5 +91,5 @@ Available in English and Turkish.
 - **Hedef kitle:** 13 yaş ve üzeri
 - **Reklam içeriyor mu:** Hayır
 - **Veri güvenliği (Data safety):** "Uygulama kullanıcı verisi toplamıyor veya paylaşmıyor" seçilebilir.
-- **Gizlilik politikası URL'si:** `store/privacy-policy.md` içeriğini herkese açık bir sayfada yayınlayın (ör. GitHub Pages, Google Sites) ve bağlantıyı girin.
+- **Gizlilik politikası URL'si:** https://github.com/SuedaTekin/pomodoro/blob/main/store/privacy-policy.md (önce dosyadaki iletişim e-postasını doldurun).
 - **Grafikler:** `store/icon-512.png` (uygulama simgesi), `store/feature-graphic.png` (öne çıkan görsel, 1024×500). En az 2 telefon ekran görüntüsü gerekir.

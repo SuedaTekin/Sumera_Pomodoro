@@ -17,7 +17,9 @@
   pomodoro sayısı, gün serisi, görevlere göre dağılım
 - **Görevler:** odak görevi seçme, pomodoroların göreve yazılması, kaydırarak silme ve geri alma
 - **Günlük hedef**, ekranı açık tutma, sistem/Türkçe/İngilizce dil seçimi
-- Tüm veriler yalnızca cihazda saklanır; hesap, reklam ve internet bağlantısı yoktur
+- **Uzaktan yönetim:** duyurular, günün sözü, metinler, varsayılan ayarlar, özellik açma/kapama ve
+  güncelleme uyarıları mağaza güncellemesi olmadan değiştirilebilir (bkz. aşağıda)
+- Kişisel veriler yalnızca cihazda saklanır; hesap ve reklam yoktur
 
 ## Proje yapısı
 
@@ -28,10 +30,12 @@ lib/
   src/controller.dart        Sayaç, görevler, geçmiş ve istatistik hesapları
   src/models.dart            Ayarlar, görev ve oturum modelleri
   src/services.dart          Kalıcı depolama ve bildirimler
+  src/remote_config.dart     GitHub'dan okunan uzaktan ayarlar
   src/strings.dart           Türkçe / İngilizce metinler
   src/brand.dart             Renkler ve tema
   src/widgets.dart           Grafik, zamanlayıcı halkası ve ortak bileşenler
   src/screens/               Zamanlayıcı, İstatistik, Görevler, Ayarlar
+remote/config.json          Yayındaki uygulamaların okuduğu uzaktan ayar dosyası
 store/                       Play Store görselleri, mağaza metinleri, gizlilik politikası
 ```
 
@@ -55,6 +59,18 @@ flutter run
 ```
 
 İşiniz bitince `subst P: /D` ile eşlemeyi kaldırın.
+
+## Yayından sonra değişiklik yapmak
+
+İki yol vardır:
+
+1. **Uzaktan ayar dosyası (anında, mağaza onayı yok):** `remote/config.json` dosyasını GitHub'da
+   düzenleyin. Duyuru, günün sözü, uygulamadaki her metin, varsayılan süreler, özellikleri
+   açma/kapama ve "güncelleme var / zorunlu güncelleme" uyarıları birkaç dakika içinde tüm
+   kullanıcılara ulaşır. Ayrıntılar: [`remote/README.md`](remote/README.md)
+2. **Yeni sürüm (kod değişiklikleri):** yeni ekran/özellik/hata düzeltmesi için `pubspec.yaml`
+   ve `kAppVersion` sürümünü artırıp yeni `.aab` yükleyin. Ardından `remote/config.json` içinde
+   `latestVersion` değerini yeni sürüme çekerek eski sürümdeki kullanıcılara "Güncelle" kartı gösterin.
 
 ## Play Store'a yayınlama
 
