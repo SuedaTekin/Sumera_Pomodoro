@@ -6,6 +6,35 @@
 
 <p align="center">Odaklan. Dinlen. İlerlemeni gör.</p>
 
+<p align="center">
+  <a href="https://github.com/SuedaTekin/pomodoro/releases/latest"><b>📲 Son sürümü indir (APK)</b></a>
+</p>
+
+## Ekran görüntüleri
+
+<p align="center">
+  <img src="store/screenshots/tr/1.png" width="260" alt="Zamanlayıcı">
+  <img src="store/screenshots/tr/2.png" width="260" alt="Gökyüzüm">
+  <img src="store/screenshots/tr/3.png" width="260" alt="İstatistikler">
+</p>
+<p align="center">
+  <img src="store/screenshots/tr/4.png" width="260" alt="Rozetler">
+  <img src="store/screenshots/tr/5.png" width="260" alt="Tam ekran">
+  <img src="store/screenshots/tr/6.png" width="260" alt="Odak sesleri">
+</p>
+
+<details>
+<summary>English screenshots</summary>
+<p align="center">
+  <img src="store/screenshots/en/1.png" width="260" alt="Timer">
+  <img src="store/screenshots/en/2.png" width="260" alt="Sky">
+  <img src="store/screenshots/en/3.png" width="260" alt="Stats">
+  <img src="store/screenshots/en/4.png" width="260" alt="Badges">
+  <img src="store/screenshots/en/5.png" width="260" alt="Full screen">
+  <img src="store/screenshots/en/6.png" width="260" alt="Focus sounds">
+</p>
+</details>
+
 ## Özellikler
 
 - **Gökyüzüm (Sumera'ya özgü):** her pomodoro kişisel gökyüzüne bir yıldız; her gün bir takımyıldız
