@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../brand.dart';
+import '../achievements.dart';
 import '../controller.dart';
 import '../strings.dart';
 import '../widgets.dart';
@@ -17,11 +19,6 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> {
   int _range = 7;
   int? _selected;
-
-  static const _weekdays = {
-    'tr': ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
-    'en': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +117,11 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
           ],
         ),
+        if (c.remoteConfig.feature('insights')) ...[
+          const SizedBox(height: 20),
+          SectionHeader(context.tr('insights')),
+          _InsightsCard(insights: c.insights, lang: lang),
+        ],
         const SizedBox(height: 20),
         SectionHeader(context.tr('focusByDay')),
         Card(
@@ -182,7 +184,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     xLabel:
                         (i, d) =>
                             _range == 7
-                                ? _weekdays[lang]![d.day.weekday - 1]
+                                ? weekdayShort(lang, d.day.weekday)
                                 : '${d.day.day}',
                   ),
                 ),
@@ -224,7 +226,9 @@ class _StatsScreenState extends State<StatsScreen> {
                 return ActivityHeatmap(
                   days: heat,
                   goalMinutes: goalMinutes,
-                  rowLabels: _weekdays[lang]!,
+                  rowLabels: [
+                    for (var w = 1; w <= 7; w++) weekdayShort(lang, w),
+                  ],
                   lessLabel: context.tr('less'),
                   moreLabel: context.tr('more'),
                   tooltip:
@@ -323,6 +327,85 @@ class _TaskBar extends StatelessWidget {
                 ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Short weekday name (Mon..Sun) in [lang]; 1 = Monday.
+String weekdayShort(String lang, int weekday) =>
+    DateFormat.E(lang).format(DateTime(2024, 1, weekday));
+
+class _InsightsCard extends StatelessWidget {
+  const _InsightsCard({required this.insights, required this.lang});
+
+  final Insights insights;
+  final String lang;
+
+  @override
+  Widget build(BuildContext context) {
+    final change = insights.change;
+    final hour = insights.bestHour;
+    final weekday = insights.bestWeekday;
+
+    final rows = <(IconData, Color, String, String)>[
+      if (change == null)
+        (
+          Icons.flag_rounded,
+          Brand.cyan,
+          context.tr('vsLastWeek'),
+          context.tr('firstWeek'),
+        )
+      else
+        (
+          change >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+          change >= 0 ? Brand.success : Colors.orangeAccent,
+          context.tr('vsLastWeek'),
+          '${change >= 0 ? '+' : ''}$change%',
+        ),
+      if (hour != null)
+        (
+          Icons.schedule_rounded,
+          Brand.chartBar,
+          context.tr('bestHour'),
+          '${hour.toString().padLeft(2, '0')}:00 – '
+              '${((hour + 1) % 24).toString().padLeft(2, '0')}:00',
+        ),
+      if (weekday != null)
+        (
+          Icons.calendar_today_rounded,
+          Brand.chartBar,
+          context.tr('bestWeekday'),
+          // 2024-01-01 was a Monday.
+          DateFormat.EEEE(lang).format(DateTime(2024, 1, weekday)),
+        ),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          children: [
+            for (final (icon, color, label, value) in rows)
+              ListTile(
+                leading: Icon(icon, color: color),
+                title: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Brand.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+                trailing: Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

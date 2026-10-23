@@ -54,6 +54,38 @@
       "Do the hard task first; the rest gets easier.",
       "Progress beats perfection.",
       "Every pomodoro is a win."
+    ],
+    "es": [
+      "Los pequeños pasos inician grandes viajes.",
+      "Concéntrate en una cosa a la vez.",
+      "No esperes a que sea perfecto. Empieza.",
+      "Descansar también es parte del trabajo.",
+      "El progreso vence a la perfección.",
+      "Cada pomodoro es una victoria."
+    ],
+    "de": [
+      "Kleine Schritte beginnen große Reisen.",
+      "Konzentriere dich auf eine Sache.",
+      "Warte nicht auf perfekt. Fang an.",
+      "Pausen gehören zur Arbeit.",
+      "Fortschritt schlägt Perfektion.",
+      "Jeder Pomodoro ist ein Sieg."
+    ],
+    "fr": [
+      "Les petits pas mènent aux grands voyages.",
+      "Une chose à la fois.",
+      "N'attends pas la perfection. Commence.",
+      "La pause fait partie du travail.",
+      "Le progrès vaut mieux que la perfection.",
+      "Chaque pomodoro est une victoire."
+    ],
+    "pt": [
+      "Pequenos passos começam grandes jornadas.",
+      "Foque em uma coisa de cada vez.",
+      "Não espere o perfeito. Comece.",
+      "Descansar também faz parte do trabalho.",
+      "Progresso vence a perfeição.",
+      "Cada pomodoro é uma vitória."
     ]
   },
 
@@ -69,7 +101,12 @@
     "fullscreen": true,
     "heatmap": true,
     "taskBreakdown": true,
-    "quotes": true
+    "quotes": true,
+    "sky": true,
+    "achievements": true,
+    "insights": true,
+    "sounds": true,
+    "share": true
   },
 
   "strings": {

@@ -4,9 +4,11 @@ import '../brand.dart';
 import '../controller.dart';
 import '../models.dart';
 import '../remote_config.dart';
+import '../sounds.dart';
 import '../strings.dart';
 import '../sync.dart';
 import '../widgets.dart';
+import 'sound_sheet.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.controller});
@@ -132,6 +134,26 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              if (controller.remoteConfig.feature('sounds')) ...[
+                SectionHeader(context.tr('focusSound')),
+                Card(
+                  child: ListTile(
+                    leading: Icon(
+                      AmbientSoundInfo.parse(s.ambientSound).icon,
+                      color: Brand.cyan,
+                    ),
+                    title: Text(
+                      context.tr(
+                        AmbientSoundInfo.parse(s.ambientSound).labelKey,
+                      ),
+                    ),
+                    subtitle: Text(context.tr('focusSoundSubtitle')),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => showSoundSheet(context, controller),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               SectionHeader(context.tr('behavior')),
               Card(
                 child: Column(
@@ -190,8 +212,11 @@ class SettingsScreen extends StatelessWidget {
                         AppSettings.systemLanguage,
                         context.tr('systemLanguage'),
                       ),
-                      ('tr', 'Türkçe'),
-                      ('en', 'English'),
+                      for (final l in AppStrings.supportedLocales)
+                        (
+                          l.languageCode,
+                          AppStrings.languageNames[l.languageCode]!,
+                        ),
                     ])
                       ListTile(
                         title: Text(label),

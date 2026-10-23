@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'achievements.dart';
 import 'brand.dart';
 import 'models.dart';
 import 'remote_config.dart';
 import 'services.dart';
+import 'sounds.dart';
 import 'strings.dart';
 import 'sync.dart';
 
@@ -18,6 +21,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
     this._storage, {
     this.remote,
     this.sync,
+    this.sound,
     String? forcedLanguage,
   }) : _forcedLanguage = forcedLanguage {
     AppStrings.overrides = remoteConfig.strings;
@@ -32,6 +36,11 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
     }
     totalSeconds = settings.workMinutes * 60;
     remainingSeconds = totalSeconds;
+
+    // Badges earned before this feature existed are not celebrated.
+    if (!_storage.prefs.containsKey(_seenKey)) {
+      _storage.prefs.setStringList(_seenKey, _unlockedIds.toList());
+    }
 
     // Resume a session that was running when the app was closed.
     final running = _storage.loadRunningTimer();
@@ -48,6 +57,11 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
 
   final AppStorage _storage;
   final String? _forcedLanguage;
+
+  SharedPreferences get prefs => _storage.prefs;
+
+  /// Ambient focus sounds; null in tests.
+  final SoundPlayer? sound;
 
   /// Live config downloaded from GitHub; null in tests.
   final RemoteConfigService? remote;
@@ -91,6 +105,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
       ..sort((a, b) => a.completedAt.compareTo(b.completedAt));
     _storage.saveTasks(tasks);
     _storage.saveHistory(history);
+    _historyChanged();
     notifyListeners();
   }
 
@@ -126,6 +141,10 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _ticker;
 
   final _completions = StreamController<FocusMode>.broadcast();
+  final _unlocks = StreamController<List<Achievement>>.broadcast();
+
+  /// Emits badges earned by the session that just finished.
+  Stream<List<Achievement>> get unlocks => _unlocks.stream;
 
   /// Emits the mode that just finished.
   Stream<FocusMode> get completions => _completions.stream;
@@ -146,7 +165,26 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
       return settings.languageCode;
     }
     final device = PlatformDispatcher.instance.locale.languageCode;
-    return device == 'tr' ? 'tr' : 'en';
+    return AppStrings.supportedLocales.any((l) => l.languageCode == device)
+        ? device
+        : 'en';
+  }
+
+  // ----------------------------------------------------------- onboarding
+
+  static const _onboardedKey = 'onboarded';
+
+  /// Existing users (with saved settings or data) skip the introduction.
+  bool get onboarded =>
+      _storage.prefs.getBool(_onboardedKey) ??
+      (_storage.prefs.containsKey('work_minutes') ||
+          history.isNotEmpty ||
+          tasks.isNotEmpty);
+
+  void completeOnboarding(AppSettings chosen) {
+    _storage.prefs.setBool(_onboardedKey, true);
+    updateSettings(chosen);
+    reset();
   }
 
   // ---------------------------------------------------------------- timer
@@ -312,7 +350,9 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
       ),
     );
     _storage.saveHistory(history);
+    _historyChanged();
     _scheduleSync();
+    final earned = _takeNewAchievements();
 
     mode = settings.enableAutoAdvance ? _nextModeAfter(finished) : finished;
     totalSeconds = settings.minutesFor(mode) * 60;
@@ -328,6 +368,7 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
     }
     notifyListeners();
     _completions.add(finished);
+    if (earned.isNotEmpty) _unlocks.add(earned);
   }
 
   void _applyWakelock() {
@@ -335,6 +376,27 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
     WakelockPlus.toggle(enable: enable).catchError((Object error) {
       debugPrint('Wakelock unavailable: $error');
     });
+    _applySound();
+  }
+
+  /// Saves the choice and lets the user hear it: it keeps playing during a
+  /// running focus session, otherwise it plays a short preview.
+  void chooseSound(AmbientSound choice) {
+    updateSettings(settings.copyWith(ambientSound: choice.name));
+    final focusing = isRunning && mode == FocusMode.work;
+    sound?.preview(choice, settings.soundVolume, keep: focusing);
+  }
+
+  /// The chosen ambient sound plays only while a focus session runs.
+  void _applySound() {
+    final player = sound;
+    if (player == null) return;
+    final chosen = AmbientSoundInfo.parse(settings.ambientSound);
+    if (isRunning && mode == FocusMode.work && chosen != AmbientSound.none) {
+      player.play(chosen, settings.soundVolume);
+    } else {
+      player.stop();
+    }
   }
 
   // ------------------------------------------------------------- settings
@@ -357,6 +419,12 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
       _syncNotifications();
     }
     if (old.keepScreenOn != updated.keepScreenOn) _applyWakelock();
+    if (isRunning &&
+        (old.ambientSound != updated.ambientSound ||
+            old.soundVolume != updated.soundVolume)) {
+      _applySound();
+    }
+    if (old.dailyGoal != updated.dailyGoal) _historyChanged();
     if (!old.cloudSync && updated.cloudSync) {
       _scheduleSync(delay: Duration.zero);
     }
@@ -534,12 +602,59 @@ class PomodoroController extends ChangeNotifier with WidgetsBindingObserver {
   void resetStats() {
     history.clear();
     _storage.saveHistory(history);
+    _historyChanged();
     if (settings.cloudSync) sync?.resetSessions();
     notifyListeners();
   }
 
+  // --------------------------------------------------------- achievements
+
+  static const _seenKey = 'achievements_seen';
+  AchievementStats? _statsCache;
+
+  void _historyChanged() => _statsCache = null;
+
+  AchievementStats get achievementStats =>
+      _statsCache ??= AchievementStats.from(history, settings.dailyGoal);
+
+  Set<String> get _unlockedIds => {
+    for (final a in achievements)
+      if (a.test(achievementStats)) a.id,
+  };
+
+  bool isUnlocked(Achievement a) => a.test(achievementStats);
+
+  List<Achievement> _takeNewAchievements() {
+    final seen = (_storage.prefs.getStringList(_seenKey) ?? const []).toSet();
+    final earned = [
+      for (final a in achievements)
+        if (!seen.contains(a.id) && a.test(achievementStats)) a,
+    ];
+    if (earned.isNotEmpty) {
+      _storage.prefs.setStringList(
+        _seenKey,
+        {...seen, ...earned.map((a) => a.id)}.toList(),
+      );
+    }
+    return earned;
+  }
+
+  Insights get insights => Insights.from(history, DateTime.now());
+
+  int get totalPomodoros => achievementStats.pomodoros;
+
+  /// Focus sessions of one calendar month, oldest first (stars of the sky).
+  List<SessionRecord> focusSessionsInMonth(DateTime month) => [
+    for (final r in _focusSessions)
+      if (r.completedAt.year == month.year &&
+          r.completedAt.month == month.month)
+        r,
+  ];
+
   @override
   void dispose() {
+    sound?.dispose();
+    _unlocks.close();
     WidgetsBinding.instance.removeObserver(this);
     remote?.removeListener(_onRemoteChanged);
     _syncDebounce?.cancel();

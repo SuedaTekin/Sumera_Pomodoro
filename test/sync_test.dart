@@ -187,6 +187,7 @@ void main() {
       addTearDown(tester.view.reset);
 
       SharedPreferences.setMockInitialValues({
+        'onboarded': true,
         if (remoteConfig != null)
           'remote_config_cache': jsonEncode(remoteConfig),
       });

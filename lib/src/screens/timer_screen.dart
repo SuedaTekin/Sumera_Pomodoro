@@ -7,6 +7,7 @@ import '../remote_config.dart';
 import '../strings.dart';
 import '../widgets.dart';
 import 'fullscreen_timer.dart';
+import 'sound_sheet.dart';
 
 class TimerScreen extends StatelessWidget {
   const TimerScreen({super.key, required this.controller});
@@ -307,6 +308,22 @@ class _TimerCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (c.remoteConfig.feature('sounds'))
+                  Positioned(
+                    top: -14,
+                    left: -6,
+                    child: IconButton(
+                      onPressed: () => showSoundSheet(context, c),
+                      tooltip: context.tr('focusSound'),
+                      color: Colors.white,
+                      iconSize: 26,
+                      icon: Icon(
+                        c.settings.ambientSound == 'none'
+                            ? Icons.headphones_outlined
+                            : Icons.headphones_rounded,
+                      ),
+                    ),
+                  ),
                 if (c.remoteConfig.feature('fullscreen'))
                   Positioned(
                     top: -14,
@@ -364,7 +381,7 @@ class _TimerCard extends StatelessWidget {
                   backgroundColor: Colors.white,
                   foregroundColor: c.mode.gradient.last,
                   minimumSize: const Size(150, 56),
-                  textStyle: const TextStyle(
+                  textStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),

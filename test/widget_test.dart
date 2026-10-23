@@ -27,7 +27,7 @@ Future<PomodoroController> pumpApp(
 
 void main() {
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded': true});
   });
 
   testWidgets('renders Turkish strings', (tester) async {
@@ -85,6 +85,7 @@ void main() {
   testWidgets('stats screen shows history in the chart', (tester) async {
     final now = DateTime.now();
     SharedPreferences.setMockInitialValues({
+      'onboarded': true,
       'session_history': jsonEncode([
         for (var i = 0; i < 3; i++)
           SessionRecord(

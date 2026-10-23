@@ -124,6 +124,7 @@ void main() {
       addTearDown(tester.view.reset);
 
       SharedPreferences.setMockInitialValues({
+        'onboarded': true,
         'remote_config_cache': jsonEncode(config),
       });
       final storage = await AppStorage.open();

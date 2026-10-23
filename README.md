@@ -8,6 +8,12 @@
 
 ## Özellikler
 
+- **Gökyüzüm (Sumera'ya özgü):** her pomodoro kişisel gökyüzüne bir yıldız; her gün bir takımyıldız
+- **14 rozet**, akıllı içgörüler (haftalık değişim, en verimli saat/gün), paylaşılabilir ilerleme kartı
+- **Odak sesleri:** yağmur, okyanus, beyaz/pembe/kahverengi gürültü (programla üretilmiş, telifsiz)
+- **İlk açılış tanıtımı** (ritim seçimi, bildirim izni) ve uygun anlarda uygulama içi puan isteği
+- **6 dil:** Türkçe, English, Español, Deutsch, Français, Português (`lib/src/l10n/`)
+
 - **Zamanlayıcı:** çalışma / kısa mola / uzun mola, ayarlanabilir süreler ve uzun mola sıklığı,
   otomatik geçiş ve otomatik başlatma, atlama ve sıfırlama
 - **Doğru sayaç:** bitiş saatine göre çalışır; arka planda ya da uygulama kapatıldığında bile
@@ -37,7 +43,13 @@ lib/
   src/strings.dart           Türkçe / İngilizce metinler
   src/brand.dart             Renkler ve tema
   src/widgets.dart           Grafik, zamanlayıcı halkası ve ortak bileşenler
-  src/screens/               Zamanlayıcı, İstatistik, Görevler, Ayarlar
+  src/achievements.dart      Rozetler ve içgörüler
+  src/sounds.dart            Odak sesleri
+  src/review.dart            Uygulama içi puan isteği
+  src/l10n/                  Dil dosyaları (anahtarlar en.dart ile aynı olmalı)
+  src/screens/               Zamanlayıcı, Gökyüzü, İstatistik, Görevler, Ayarlar, Tanıtım
+assets/sounds/               Odak sesleri (tool/make_sounds.py ile üretilir)
+tool/                        İkon, ses ve mağaza görseli üreticileri
 remote/config.json          Yayındaki uygulamaların okuduğu uzaktan ayar dosyası
 supabase/schema.sql          Bulut yedekleme veritabanı şeması ve erişim kuralları
 store/                       Play Store görselleri, mağaza metinleri, gizlilik politikası

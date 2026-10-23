@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'models.dart';
 
 const kAppName = 'Sumera Pomodoro';
-const kAppVersion = '1.0.0';
+const kAppVersion = '1.1.0';
 
 class Brand {
   static const indigo = Color(0xFF5B4DFF);
@@ -66,12 +67,15 @@ ThemeData buildTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: Brand.background,
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: Brand.background,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(
+      // Derived from the platform typography so it keeps the system font.
+      titleTextStyle: Typography.material2021(
+        platform: defaultTargetPlatform,
+      ).white.titleLarge!.copyWith(
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: Brand.textPrimary,

@@ -8,6 +8,7 @@ import 'src/brand.dart';
 import 'src/controller.dart';
 import 'src/remote_config.dart';
 import 'src/services.dart';
+import 'src/sounds.dart';
 import 'src/sync.dart';
 
 Future<void> main() async {
@@ -36,7 +37,10 @@ Future<void> main() async {
     storage,
     remote: remote,
     sync: SyncService(storage.prefs),
+    sound: SoundPlayer(),
   );
+  // New users are asked during onboarding, with an explanation.
+  if (controller.onboarded) unawaited(NotificationService.requestPermission());
   runApp(SumeraApp(controller: controller));
 
   // Optional build-time project; otherwise it comes from the remote config.

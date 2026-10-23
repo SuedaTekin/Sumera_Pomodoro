@@ -124,6 +124,8 @@ class RemoteConfig {
   final String? cloudUrl;
   final String? cloudKey;
 
+  /// Remote kill-switch per feature: fullscreen, heatmap, taskBreakdown,
+  /// quotes, sky, achievements, insights, sounds, share.
   bool feature(String name) => features[name] ?? true;
 
   bool get updateRequired =>

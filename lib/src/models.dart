@@ -18,6 +18,8 @@ class AppSettings {
     this.enableHaptics = true,
     this.showOngoing = true,
     this.cloudSync = true,
+    this.ambientSound = 'none',
+    this.soundVolume = 60,
     this.languageCode = systemLanguage,
   });
 
@@ -47,6 +49,12 @@ class AppSettings {
   /// Back up tasks and sessions to Supabase.
   final bool cloudSync;
 
+  /// Name of an [AmbientSound] played while focusing, or 'none'.
+  final String ambientSound;
+
+  /// 0..100.
+  final int soundVolume;
+
   /// 'tr', 'en' or [systemLanguage].
   final String languageCode;
 
@@ -69,6 +77,8 @@ class AppSettings {
     bool? enableHaptics,
     bool? showOngoing,
     bool? cloudSync,
+    String? ambientSound,
+    int? soundVolume,
     String? languageCode,
   }) {
     return AppSettings(
@@ -84,6 +94,8 @@ class AppSettings {
       enableHaptics: enableHaptics ?? this.enableHaptics,
       showOngoing: showOngoing ?? this.showOngoing,
       cloudSync: cloudSync ?? this.cloudSync,
+      ambientSound: ambientSound ?? this.ambientSound,
+      soundVolume: soundVolume ?? this.soundVolume,
       languageCode: languageCode ?? this.languageCode,
     );
   }
@@ -129,6 +141,8 @@ class AppSettings {
       enableHaptics: prefs.getBool('haptics') ?? true,
       showOngoing: prefs.getBool('show_ongoing') ?? true,
       cloudSync: prefs.getBool('cloud_sync') ?? true,
+      ambientSound: prefs.getString('ambient_sound') ?? 'none',
+      soundVolume: (prefs.getInt('sound_volume') ?? 60).clamp(0, 100),
       languageCode: prefs.getString('language_code') ?? systemLanguage,
     );
   }
@@ -146,6 +160,8 @@ class AppSettings {
     await prefs.setBool('haptics', enableHaptics);
     await prefs.setBool('show_ongoing', showOngoing);
     await prefs.setBool('cloud_sync', cloudSync);
+    await prefs.setString('ambient_sound', ambientSound);
+    await prefs.setInt('sound_volume', soundVolume);
     await prefs.setString('language_code', languageCode);
   }
 }

@@ -132,12 +132,25 @@ class NotificationService {
     );
 
     await _notifications.initialize(initSettings);
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
     _initialized = true;
+  }
+
+  static Future<void> requestPermission() async {
+    if (!_initialized) return;
+    try {
+      await _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestNotificationsPermission();
+      await _notifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, sound: true);
+    } catch (error) {
+      debugPrint('Permission request failed: $error');
+    }
   }
 
   static NotificationDetails _details(String languageCode) {
