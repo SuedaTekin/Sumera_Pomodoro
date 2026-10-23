@@ -231,13 +231,13 @@ Sem conta, sem anúncios. Disponível em 6 idiomas.
 - **Hedef kitle:** 13 yaş ve üzeri
 - **Reklam içeriyor mu:** Hayır
 - **Veri güvenliği (Data safety):**
-  - Bulut yedekleme **kapalıyken** (`remote/config.json` içinde `cloud.url` boş): "Uygulama kullanıcı verisi toplamıyor veya paylaşmıyor".
+  - Bulut yedekleme **kapalıyken** (pomodoro-config deposundaki `config.json` içinde `cloud.url` boş): "Uygulama kullanıcı verisi toplamıyor veya paylaşmıyor".
   - Bulut yedekleme **açıkken**: Toplanan veri → *Uygulama etkinliği: Diğer kullanıcı tarafından oluşturulan içerik* (görevler) ve *Uygulama etkinliği: Diğer uygulama işlemleri* (odak oturumları). Amaç: *Uygulama işlevselliği*. Paylaşılmıyor. Aktarımda şifreleniyor: Evet. Kullanıcı silme isteyebilir: Evet (Ayarlar > Buluttaki verilerimi sil). İsteğe bağlı: Evet (kapatılabilir).
-- **Gizlilik politikası URL'si:** https://github.com/SuedaTekin/pomodoro/blob/main/store/privacy-policy.md (önce dosyadaki iletişim e-postasını doldurun).
+- **Gizlilik politikası URL'si:** https://github.com/SuedaTekin/pomodoro-config/blob/main/privacy-policy.md (önce dosyadaki iletişim e-postasını doldurun).
 
 ## Büyüme için öneriler
 
 1. **İlk test kullanıcıları:** Yeni kişisel geliştirici hesaplarında Play, yayından önce en az 12 test kullanıcısının 14 gün boyunca kapalı testte (Closed testing) kalmasını şart koşar. Arkadaş ve sınıf gruplarından başlayın; uygulama içi puan isteği 5. pomodoroda çıkar.
-2. **Sezon:** Sınav dönemlerinden (Ocak, Mayıs–Haziran) önce `remote/config.json` ile duyuru kartı ve özel "günün sözleri" yayınlayın.
+2. **Sezon:** Sınav dönemlerinden (Ocak, Mayıs–Haziran) önce pomodoro-config deposundaki `config.json` ile duyuru kartı ve özel "günün sözleri" yayınlayın.
 3. **Paylaşım:** Gökyüzü ve haftalık ilerleme kartı sosyal medyada kendiliğinden tanıtım sağlar; TikTok/Instagram'daki "study with me" içerikleriyle eşleştirin.
 4. **Mağaza denemeleri:** Play Console > Store listing experiments ile kısa açıklamayı ve ilk ekran görüntüsünü A/B test edin.

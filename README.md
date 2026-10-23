@@ -79,9 +79,9 @@ lib/
   src/screens/               Zamanlayıcı, Gökyüzü, İstatistik, Görevler, Ayarlar, Tanıtım
 assets/sounds/               Odak sesleri (tool/make_sounds.py ile üretilir)
 tool/                        İkon, ses ve mağaza görseli üreticileri
-remote/config.json          Yayındaki uygulamaların okuduğu uzaktan ayar dosyası
+remote/                      Açık pomodoro-config deposu (alt modül): uzaktan ayarlar ve gizlilik politikası
 supabase/schema.sql          Bulut yedekleme veritabanı şeması ve erişim kuralları
-store/                       Play Store görselleri, mağaza metinleri, gizlilik politikası
+store/                       Play Store görselleri ve mağaza metinleri
 ```
 
 ## Geliştirme
@@ -109,12 +109,13 @@ flutter run
 
 İki yol vardır:
 
-1. **Uzaktan ayar dosyası (anında, mağaza onayı yok):** `remote/config.json` dosyasını GitHub'da
+1. **Uzaktan ayar dosyası (anında, mağaza onayı yok):** herkese açık
+   [pomodoro-config](https://github.com/SuedaTekin/pomodoro-config) deposundaki `config.json` dosyasını GitHub'da
    düzenleyin. Duyuru, günün sözü, uygulamadaki her metin, varsayılan süreler, özellikleri
    açma/kapama ve "güncelleme var / zorunlu güncelleme" uyarıları birkaç dakika içinde tüm
-   kullanıcılara ulaşır. Ayrıntılar: [`remote/README.md`](remote/README.md)
+   kullanıcılara ulaşır. Ayrıntılar: [pomodoro-config README](https://github.com/SuedaTekin/pomodoro-config#readme)
 2. **Yeni sürüm (kod değişiklikleri):** yeni ekran/özellik/hata düzeltmesi için `pubspec.yaml`
-   ve `kAppVersion` sürümünü artırıp yeni `.aab` yükleyin. Ardından `remote/config.json` içinde
+   ve `kAppVersion` sürümünü artırıp yeni `.aab` yükleyin. Ardından `config.json` içinde
    `latestVersion` değerini yeni sürüme çekerek eski sürümdeki kullanıcılara "Güncelle" kartı gösterin.
 
 ## Bulut yedeklemeyi açmak (Supabase)
@@ -123,7 +124,7 @@ flutter run
 2. **Authentication > Sign In / Providers** altında **Allow anonymous sign-ins** seçeneğini açın.
 3. **SQL Editor**'de `supabase/schema.sql` dosyasının tamamını çalıştırın.
 4. **Project Settings > API Keys** sayfasından proje adresini ve *publishable* (ya da *anon*) anahtarı alın.
-5. `remote/config.json` içindeki `cloud.url` ve `cloud.publishableKey` alanlarını doldurup GitHub'a kaydedin.
+5. pomodoro-config deposundaki `config.json` içindeki `cloud.url` ve `cloud.publishableKey` alanlarını doldurup GitHub'a kaydedin.
 
 Uygulamalar bir sonraki açılışta bağlanır ve Ayarlar'da **Bulut yedekleme** bölümü görünür.
 Gizlilik politikası bu durumu zaten kapsıyor; Play Console'daki **Veri güvenliği** formunu
@@ -167,6 +168,7 @@ flutter build appbundle --release
 - `icon-512.png` – mağaza simgesi
 - `feature-graphic.png` – öne çıkan görsel (1024×500)
 - `listing.md` – uygulama adı, kısa ve tam açıklama (TR/EN), kategori ve form önerileri
-- `privacy-policy.md` – gizlilik politikası; herkese açık bir sayfada yayınlayıp bağlantısını girin
+- Gizlilik politikası herkese açık pomodoro-config deposunda:
+  https://github.com/SuedaTekin/pomodoro-config/blob/main/privacy-policy.md
 
 Uygulama kimliği: `com.sumera.pomodoro` (Play'e ilk yüklemeden sonra değiştirilemez).

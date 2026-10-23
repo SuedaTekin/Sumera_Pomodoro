@@ -8,19 +8,19 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'brand.dart';
 
-/// Where the live config is published. Edit `remote/config.json` in the
-/// GitHub repository and every installed app picks it up within minutes.
+/// Where the live config is published. Edit `config.json` in the public
+/// pomodoro-config repository and every installed app picks it up within minutes.
 /// Override at build time with `--dart-define=REMOTE_CONFIG_URL=...`.
 const kRemoteConfigUrl = String.fromEnvironment(
   'REMOTE_CONFIG_URL',
   defaultValue:
-      'https://raw.githubusercontent.com/SuedaTekin/pomodoro/main/remote/config.json',
+      'https://raw.githubusercontent.com/SuedaTekin/pomodoro-config/main/config.json',
 );
 
 const kStoreUrl =
     'https://play.google.com/store/apps/details?id=com.sumera.pomodoro';
 const kPrivacyPolicyUrl =
-    'https://github.com/SuedaTekin/pomodoro/blob/main/store/privacy-policy.md';
+    'https://github.com/SuedaTekin/pomodoro-config/blob/main/privacy-policy.md';
 
 /// A text with one value per language code.
 class LocalizedText {
